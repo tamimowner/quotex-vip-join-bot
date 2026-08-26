@@ -163,10 +163,11 @@ async def menu_support(callback: CallbackQuery):
 async def menu_create(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
+    register_url = await get_affiliate_url(str(callback.from_user.id))
     await _safe_edit(
         callback,
         get_text(lang, "create_account_guide"),
-        reply_markup=await back_keyboard(lang),
+        reply_markup=await premium_keyboard(lang, register_url),
     )
     await callback.answer()
 
