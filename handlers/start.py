@@ -30,17 +30,16 @@ async def cmd_start(message: Message):
             await session.commit()
             await message.answer(
                 get_text("bn", "choose_language"),
-                reply_markup=language_keyboard()
+                reply_markup=language_keyboard(),
             )
             return
 
-        # User already exists
         lang = user.language or "bn"
         name = message.from_user.first_name or "User"
         await message.answer(
             get_text(lang, "welcome", name=name),
-            reply_markup=main_menu(lang),
-            parse_mode="HTML"
+            reply_markup=await main_menu(lang),
+            parse_mode="HTML",
         )
 
 
@@ -60,7 +59,7 @@ async def set_language(callback: CallbackQuery):
     name = callback.from_user.first_name or "User"
     await callback.message.answer(
         get_text(lang, "welcome", name=name),
-        reply_markup=main_menu(lang),
-        parse_mode="HTML"
+        reply_markup=await main_menu(lang),
+        parse_mode="HTML",
     )
     await callback.answer()
