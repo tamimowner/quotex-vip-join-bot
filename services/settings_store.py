@@ -16,6 +16,9 @@ DEFAULTS = {
     "btn_back": "⬅️ ফিরে যান",
     "public_channel": "https://t.me/+gLV8BLij6PAxYjE1",
     "support_text": "কোনো সমস্যা হলে অ্যাডমিন: @TEADMIN9",
+    # Welcome media
+    "welcome_photo_url": "",
+    "welcome_photo_file_id": "",
 }
 
 
@@ -25,7 +28,7 @@ async def get_setting(key: str, default: str | None = None) -> str:
             select(BotSettings).where(BotSettings.key == key)
         )
         row = result.scalar_one_or_none()
-        if row and row.value:
+        if row and row.value is not None and row.value != "":
             return row.value
     if default is not None:
         return default
@@ -48,7 +51,6 @@ async def set_setting(key: str, value: str) -> None:
 async def get_affiliate_url(click_id: str) -> str:
     base = await get_setting("affiliate_link_base")
     site_id = await get_setting("site_id")
-    # Ensure placeholders exist
     if "{click_id}" not in base:
         sep = "&" if "?" in base else "?"
         base = f"{base}{sep}click_id={{click_id}}"
