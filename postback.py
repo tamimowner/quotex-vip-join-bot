@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request, Query
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, JSONResponse
 from datetime import datetime
 from sqlalchemy import select
 from database.models import User, PostbackLog
@@ -14,14 +14,14 @@ app = FastAPI(title="Quotex Postback Receiver")
 bot = Bot(token=settings.BOT_TOKEN)
 
 
+@app.get("/")
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return JSONResponse({"status": "ok", "service": "quotex-vip-join-bot"})
 
 
 @app.api_route("/postback", methods=["GET", "POST"])
 async def postback(request: Request):
-    # Collect all parameters
     if request.method == "GET":
         params = dict(request.query_params)
     else:
@@ -32,7 +32,6 @@ async def postback(request: Request):
             form = await request.form()
             params = dict(form)
 
-    # Common Quotex fields
     status = params.get("status") or params.get("{status}")
     click_id = params.get("cid") or params.get("click_id") or params.get("{click_id}")
     trader_id = params.get("uid") or params.get("trader_id") or params.get("{trader_id}")
@@ -41,7 +40,6 @@ async def postback(request: Request):
     sumdep = float(params.get("sumdep") or params.get("{sumdep}") or 0)
     sumwithdraw = float(params.get("sumwithdraw") or params.get("{sumwithdraw}") or 0)
 
-    # Log every postback
     async with async_session() as session:
         log = PostbackLog(
             click_id=str(click_id) if click_id else None,
@@ -56,11 +54,9 @@ async def postback(request: Request):
         session.add(log)
         await session.commit()
 
-        # Only process successful deposits
         if not click_id or sumdep <= 0:
             return PlainTextResponse("OK", status_code=200)
 
-        # Find user by telegram_id (we use telegram_id as click_id)
         try:
             telegram_id = int(click_id)
         except (ValueError, TypeError):
@@ -74,7 +70,6 @@ async def postback(request: Request):
         if not user:
             return PlainTextResponse("OK", status_code=200)
 
-        # Update user data
         user.trader_id = str(trader_id) if trader_id else user.trader_id
         user.country = str(country) if country else user.country
         user.total_deposit = (user.total_deposit or 0) + sumdep
@@ -90,7 +85,6 @@ async def postback(request: Request):
 
         await session.commit()
 
-        # If just verified → create unique invite and send to user
         if just_verified:
             invite_link = await create_unique_invite(bot, telegram_id)
             if invite_link:
@@ -100,7 +94,7 @@ async def postback(request: Request):
                         chat_id=telegram_id,
                         text=get_text(lang, "invite_ready", link=invite_link),
                         parse_mode="HTML",
-                        disable_web_page_preview=True
+                        disable_web_page_preview=True,
                     )
                 except Exception as e:
                     print(f"Failed to send invite to {telegram_id}: {e}")
