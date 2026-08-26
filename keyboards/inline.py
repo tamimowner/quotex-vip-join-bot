@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from locales import get_text
-from services.settings_store import get_setting
+from services.settings_store import get_setting, get_button_text
 
 
 def language_keyboard() -> InlineKeyboardMarkup:
@@ -33,7 +33,6 @@ async def _btn(
 
 
 async def main_menu(lang: str) -> InlineKeyboardMarkup:
-    # Pair buttons side-by-side (2 per row)
     items = [
         ("btn_premium", "menu:premium", "success"),
         ("btn_status", "menu:status", "primary"),
@@ -45,8 +44,7 @@ async def main_menu(lang: str) -> InlineKeyboardMarkup:
 
     built = []
     for key, cb, default_style in items:
-        text = await get_setting(key, get_text(lang, key))
-        # Short labels look better in 2-column layout
+        text = await get_button_text(key, lang)
         if len(text) > 28:
             text = text[:26] + "…"
         style = await get_setting(f"style_{key}", default_style)
@@ -62,11 +60,9 @@ async def main_menu(lang: str) -> InlineKeyboardMarkup:
 
     rows = []
     for i in range(0, len(built), 2):
-        chunk = built[i : i + 2]
-        rows.append(chunk)
+        rows.append(built[i : i + 2])
 
-    # Full-width Settings row at bottom
-    settings_text = get_text(lang, "btn_settings")
+    settings_text = await get_button_text("btn_settings", lang)
     rows.append([
         await _btn(settings_text, callback_data="menu:settings", style="primary"),
     ])
@@ -77,14 +73,18 @@ async def main_menu(lang: str) -> InlineKeyboardMarkup:
 async def settings_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            await _btn(get_text(lang, "btn_change_language"), callback_data="settings:lang", style="success"),
+            await _btn(
+                get_text(lang, "btn_change_language"),
+                callback_data="settings:lang",
+                style="success",
+            ),
         ],
         [
-            await _btn(get_text(lang, "btn_status"), callback_data="menu:status", style="primary"),
-            await _btn(get_text(lang, "btn_support"), callback_data="menu:support", style="primary"),
+            await _btn(await get_button_text("btn_status", lang), callback_data="menu:status", style="primary"),
+            await _btn(await get_button_text("btn_support", lang), callback_data="menu:support", style="primary"),
         ],
         [
-            await _btn(get_text(lang, "btn_back"), callback_data="menu:back", style="primary"),
+            await _btn(await get_button_text("btn_back", lang), callback_data="menu:back", style="primary"),
         ],
     ])
 
@@ -96,14 +96,14 @@ async def settings_language_keyboard(lang: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🇧🇩 বাংলা", callback_data="lang:bn", style="success"),
         ],
         [
-            await _btn(get_text(lang, "btn_back"), callback_data="menu:settings", style="primary"),
+            await _btn(await get_button_text("btn_back", lang), callback_data="menu:settings", style="primary"),
         ],
     ])
 
 
 async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup:
-    btn_register = await get_setting("btn_register", get_text(lang, "btn_register"))
-    btn_back = await get_setting("btn_back", get_text(lang, "btn_back"))
+    btn_register = await get_button_text("btn_register", lang)
+    btn_back = await get_button_text("btn_back", lang)
     style_reg = await get_setting("style_btn_register", "success")
     style_back = await get_setting("style_btn_back", "primary")
     icon_reg = await get_setting("icon_btn_register", "")
@@ -115,7 +115,7 @@ async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup
 
 
 async def back_keyboard(lang: str) -> InlineKeyboardMarkup:
-    btn_back = await get_setting("btn_back", get_text(lang, "btn_back"))
+    btn_back = await get_button_text("btn_back", lang)
     style_back = await get_setting("style_btn_back", "primary")
     icon_back = await get_setting("icon_btn_back", "")
     return InlineKeyboardMarkup(inline_keyboard=[
