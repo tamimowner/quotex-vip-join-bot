@@ -3,7 +3,9 @@ Entry point for Railway / Docker.
 Runs FastAPI (postback) + aiogram bot together.
 """
 import asyncio
+import os
 import threading
+import traceback
 import uvicorn
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -15,19 +17,25 @@ from handlers.chat_member import router as chat_member_router
 from postback import app as fastapi_app
 
 
+def get_port() -> int:
+    return int(os.getenv("PORT", str(settings.PORT or 8000)))
+
+
 def run_api():
+    port = get_port()
+    print(f"Starting uvicorn on 0.0.0.0:{port}")
     uvicorn.run(
         fastapi_app,
         host="0.0.0.0",
-        port=int(settings.PORT),
-        log_level="info"
+        port=port,
+        log_level="info",
     )
 
 
 async def run_bot():
     bot = Bot(
         token=settings.BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher()
 
@@ -36,16 +44,25 @@ async def run_bot():
     dp.include_router(chat_member_router)
 
     await init_db()
-    print("✅ Database ready")
-    print("🤖 Bot polling started...")
+    print("Database ready")
+    print("Bot polling started...")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    # Start FastAPI in a background thread
+    port = get_port()
+    print(f"PORT={port}")
+    print(f"DATABASE_URL scheme ok={settings.database_url.startswith('postgresql+asyncpg')}")
+
+    # HTTP must start first so Railway health/domain works even if bot has issues
     api_thread = threading.Thread(target=run_api, daemon=True)
     api_thread.start()
-    print(f"🌐 Postback server running on port {settings.PORT}")
+    print(f"Postback server thread started on port {port}")
 
-    # Start bot in main thread
-    asyncio.run(run_bot())
+    try:
+        asyncio.run(run_bot())
+    except Exception:
+        print("Bot crashed:")
+        traceback.print_exc()
+        # Keep process alive so /health still works for debugging
+        api_thread.join()
