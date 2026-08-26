@@ -33,28 +33,72 @@ async def _btn(
 
 
 async def main_menu(lang: str) -> InlineKeyboardMarkup:
+    # Pair buttons side-by-side (2 per row)
     items = [
         ("btn_premium", "menu:premium", "success"),
+        ("btn_status", "menu:status", "primary"),
         ("btn_create_account", "menu:create", "primary"),
         ("btn_delete_account", "menu:delete", "danger"),
         ("btn_public", "menu:public", "primary"),
-        ("btn_status", "menu:status", "primary"),
         ("btn_support", "menu:support", "primary"),
     ]
-    rows = []
+
+    built = []
     for key, cb, default_style in items:
         text = await get_setting(key, get_text(lang, key))
+        # Short labels look better in 2-column layout
+        if len(text) > 28:
+            text = text[:26] + "…"
         style = await get_setting(f"style_{key}", default_style)
         icon = await get_setting(f"icon_{key}", "")
-        rows.append([
+        built.append(
             await _btn(
                 text,
                 callback_data=cb,
                 style=style or default_style,
                 icon_custom_emoji_id=icon or None,
             )
-        ])
+        )
+
+    rows = []
+    for i in range(0, len(built), 2):
+        chunk = built[i : i + 2]
+        rows.append(chunk)
+
+    # Full-width Settings row at bottom
+    settings_text = get_text(lang, "btn_settings")
+    rows.append([
+        await _btn(settings_text, callback_data="menu:settings", style="primary"),
+    ])
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def settings_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            await _btn(get_text(lang, "btn_change_language"), callback_data="settings:lang", style="success"),
+        ],
+        [
+            await _btn(get_text(lang, "btn_status"), callback_data="menu:status", style="primary"),
+            await _btn(get_text(lang, "btn_support"), callback_data="menu:support", style="primary"),
+        ],
+        [
+            await _btn(get_text(lang, "btn_back"), callback_data="menu:back", style="primary"),
+        ],
+    ])
+
+
+async def settings_language_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🇬🇧 English", callback_data="lang:en", style="primary"),
+            InlineKeyboardButton(text="🇧🇩 বাংলা", callback_data="lang:bn", style="success"),
+        ],
+        [
+            await _btn(get_text(lang, "btn_back"), callback_data="menu:settings", style="primary"),
+        ],
+    ])
 
 
 async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup:
