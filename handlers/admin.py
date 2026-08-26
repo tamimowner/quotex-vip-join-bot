@@ -12,7 +12,6 @@ router = Router()
 
 _pending: dict[int, str] = {}
 
-# Human-readable map for admin
 BUTTON_MAP = [
     ("btn_premium", "প্রিমিয়াম VIP জয়েন বাটন (মেইন মেনু)"),
     ("btn_create_account", "নতুন অ্যাকাউন্ট গাইড বাটন"),
@@ -46,6 +45,7 @@ class AdminPendingFilter(BaseFilter):
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🖼 ওয়েলকাম ফটো (URL/আপলোড)", callback_data="adm:photo", style="success")],
         [InlineKeyboardButton(text="🔗 কোটেক্স পার্টনার লিংক", callback_data="adm:link", style="primary")],
         [InlineKeyboardButton(text="📋 সব বাটন টেক্সট দেখুন", callback_data="adm:map", style="primary")],
         [InlineKeyboardButton(text="💎 বাটন টেক্সট/ইমোজি", callback_data="adm:btns", style="success")],
@@ -65,14 +65,37 @@ async def cmd_admin(message: Message):
         return
     await message.answer(
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
+        "• ওয়েলকাম ফটো (URL বা সরাসরি ছবি)\n"
         "• বাটন টেক্সট + ইউনিকোড ইমোজি\n"
         "• বাটন কালার: 🟢 success / 🔵 primary / 🔴 danger\n"
-        "• প্রিমিয়াম কাস্টম ইমোজি (Telegram Premium প্রয়োজন)\n\n"
-        f"আপনার ID: <code>{message.from_user.id}</code>\n\n"
-        "⚠️ প্রিমিয়াম ইমোজি দেখাতে <b>বট ওনার অ্যাকাউন্টে Telegram Premium</b> থাকতে হবে।",
+        "• প্রিমিয়াম কাস্টম ইমোজি\n\n"
+        f"আপনার ID: <code>{message.from_user.id}</code>",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
+
+
+@router.callback_query(F.data == "adm:photo")
+async def adm_photo(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        return
+    url = await get_setting("welcome_photo_url", "")
+    file_id = await get_setting("welcome_photo_file_id", "")
+    _pending[callback.from_user.id] = "welcome_photo"
+    await callback.message.edit_text(
+        "🖼 <b>ওয়েলকাম ফটো সেট</b>\n\n"
+        f"বর্তমান URL:\n<code>{url or 'নেই'}</code>\n\n"
+        f"বর্তমান file_id:\n<code>{(file_id[:40] + '…') if file_id and len(file_id) > 40 else (file_id or 'নেই')}</code>\n\n"
+        "যা পাঠাতে পারবেন:\n"
+        "1️⃣ সরাসরি <b>ছবি</b> পাঠান (সবচেয়ে ভালো)\n"
+        "2️⃣ অথবা ছবির <b>URL</b> পাঠান (https://...)\n"
+        "3️⃣ মুছতে লিখুন: <code>clear</code>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")],
+        ]),
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "adm:map")
@@ -204,8 +227,7 @@ async def adm_btns(callback: CallbackQuery):
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
         "💎 <b>বাটন টেক্সট সেট</b>\n\n"
-        "বাটন সিলেক্ট করুন → নতুন টেক্সট পাঠান (সাধারণ ইমোজিসহ)।\n"
-        "প্রিমিয়াম কাস্টম ইমোজির জন্য আলাদা মেনু: <b>প্রিমিয়াম ইমোজি আইকন</b>",
+        "বাটন সিলেক্ট করুন → নতুন টেক্সট পাঠান।",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -225,9 +247,7 @@ async def adm_styles(callback: CallbackQuery):
         )])
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
-        "🎨 <b>বাটন কালার</b>\n\n"
-        "🟢 success = সবুজ\n🔵 primary = নীল\n🔴 danger = লাল\n\n"
-        "যে বাটনের কালার বদলাবেন সিলেক্ট করুন:",
+        "🎨 <b>বাটন কালার</b>\n\n🟢 success / 🔵 primary / 🔴 danger",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -250,7 +270,7 @@ async def adm_style_pick(callback: CallbackQuery):
     ]
     rows.append([InlineKeyboardButton(text="⬅️ ফিরে", callback_data="adm:styles", style="primary")])
     await callback.message.edit_text(
-        f"🎨 <code>{key}</code>\nবর্তমান: <b>{current}</b>\n\nনতুন কালার বাছুন:",
+        f"🎨 <code>{key}</code>\nবর্তমান: <b>{current}</b>",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -261,15 +281,13 @@ async def adm_style_pick(callback: CallbackQuery):
 async def adm_style_set(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
-    # adm:styleset:btn_premium:success
     parts = callback.data.split(":")
-    # ['adm', 'styleset', 'btn_premium', 'success']
     key = parts[2]
     style = parts[3]
     await set_setting(f"style_{key}", style)
     await callback.answer(f"✅ {key} → {style}", show_alert=True)
     await callback.message.edit_text(
-        f"✅ সেভ: <code>{key}</code> কালার = <b>{style}</b>\n\n/start দিয়ে মেনু দেখুন।",
+        f"✅ সেভ: <code>{key}</code> = <b>{style}</b>",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
@@ -288,11 +306,7 @@ async def adm_icons(callback: CallbackQuery):
         )])
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
-        "✨ <b>প্রিমিয়াম কাস্টম ইমোজি</b>\n\n"
-        "১) নিচ থেকে বাটন সিলেক্ট করুন\n"
-        "২) Telegram Premium কাস্টম ইমোজি পাঠান (শুধু ইমোজি বা ইমোজি+টেক্সট)\n"
-        "৩) বট <code>custom_emoji_id</code> সেভ করবে\n\n"
-        "⚠️ বট ওনারের অ্যাকাউন্টে <b>Telegram Premium</b> থাকতে হবে, নাহলে ইমোজি দেখাবে না।",
+        "✨ <b>প্রিমিয়াম কাস্টম ইমোজি</b>\n\nবাটন সিলেক্ট → কাস্টম ইমোজি পাঠান।",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -307,10 +321,8 @@ async def adm_icon_set(callback: CallbackQuery):
     current = await get_setting(f"icon_{key}", "")
     _pending[callback.from_user.id] = f"icon_{key}"
     await callback.message.edit_text(
-        f"✨ <code>{key}</code> এর প্রিমিয়াম ইমোজি\n\n"
-        f"বর্তমান id: <code>{current or 'নেই'}</code>\n\n"
-        f"এখন <b>কাস্টম/প্রিমিয়াম ইমোজি</b> পাঠান।\n"
-        f"মুছে ফেলতে: <code>clear</code> লিখুন।",
+        f"✨ <code>{key}</code>\nবর্তমান id: <code>{current or 'নেই'}</code>\n\n"
+        f"কাস্টম ইমোজি পাঠান। মুছতে: <code>clear</code>",
         parse_mode="HTML",
     )
     await callback.answer()
@@ -320,6 +332,7 @@ async def adm_icon_set(callback: CallbackQuery):
 async def adm_home(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
+    _pending.pop(callback.from_user.id, None)
     await callback.message.edit_text(
         "🛠 <b>অ্যাডমিন প্যানেল</b>",
         reply_markup=admin_menu_kb(),
@@ -337,13 +350,29 @@ async def adm_set_key(callback: CallbackQuery):
     title = next((t for k, t in BUTTON_MAP if k == key), key)
     _pending[callback.from_user.id] = key
     await callback.message.edit_text(
-        f"📝 <b>{title}</b>\n"
-        f"Key: <code>{key}</code>\n\n"
-        f"বর্তমান পুরো টেক্সট:\n<code>{current}</code>\n\n"
-        f"নতুন টেক্সট পাঠান (সাধারণ ইমোজি 👍⭐💎 চলবে):",
+        f"📝 <b>{title}</b>\nKey: <code>{key}</code>\n\n"
+        f"বর্তমান:\n<code>{current}</code>\n\nনতুন টেক্সট পাঠান:",
         parse_mode="HTML",
     )
     await callback.answer()
+
+
+@router.message(AdminPendingFilter(), F.photo)
+async def admin_photo_input(message: Message):
+    uid = message.from_user.id
+    key = _pending.get(uid)
+    if key != "welcome_photo":
+        return
+    _pending.pop(uid, None)
+    # largest size
+    photo = message.photo[-1]
+    await set_setting("welcome_photo_file_id", photo.file_id)
+    await set_setting("welcome_photo_url", "")  # prefer file_id
+    await message.answer(
+        "✅ ওয়েলকাম ফটো সেভ হয়েছে (Telegram file_id)।\n"
+        "/start দিয়ে চেক করুন।",
+        reply_markup=admin_menu_kb(),
+    )
 
 
 @router.message(AdminPendingFilter(), F.text)
@@ -352,7 +381,31 @@ async def admin_text_input(message: Message):
     key = _pending.pop(uid)
     value = (message.text or "").strip()
 
-    # Premium custom emoji capture for icon_* keys
+    # Welcome photo via URL / clear
+    if key == "welcome_photo":
+        if value.lower() == "clear":
+            await set_setting("welcome_photo_url", "")
+            await set_setting("welcome_photo_file_id", "")
+            await message.answer("✅ ওয়েলকাম ফটো মুছে ফেলা হয়েছে।", reply_markup=admin_menu_kb())
+            return
+        if value.startswith("http://") or value.startswith("https://"):
+            await set_setting("welcome_photo_url", value)
+            await set_setting("welcome_photo_file_id", "")
+            await message.answer(
+                f"✅ ফটো URL সেভ:\n<code>{value}</code>\n\n/start দিয়ে চেক করুন।",
+                reply_markup=admin_menu_kb(),
+                parse_mode="HTML",
+            )
+            return
+        _pending[uid] = key
+        await message.answer(
+            "❌ URL বা ছবি দরকার।\n"
+            "• https://... লিংক পাঠান\n"
+            "• অথবা সরাসরি ছবি পাঠান\n"
+            "• মুছতে: clear"
+        )
+        return
+
     if key.startswith("icon_"):
         if value.lower() == "clear":
             await set_setting(key, "")
@@ -365,20 +418,15 @@ async def admin_text_input(message: Message):
                     emoji_id = str(ent.custom_emoji_id)
                     break
         if not emoji_id:
-            # allow pasting raw id
             if value.isdigit() and len(value) >= 10:
                 emoji_id = value
             else:
                 _pending[uid] = key
-                await message.answer(
-                    "❌ কাস্টম ইমোজি পাওয়া যায়নি।\n"
-                    "Telegram Premium কাস্টম ইমোজি পাঠান, অথবা emoji id নম্বর পাঠান।"
-                )
+                await message.answer("❌ কাস্টম ইমোজি পাওয়া যায়নি।")
                 return
         await set_setting(key, emoji_id)
         await message.answer(
-            f"✅ প্রিমিয়াম ইমোজি সেভ\n<code>{key}</code> = <code>{emoji_id}</code>\n\n"
-            f"/start দিয়ে বাটন চেক করুন।",
+            f"✅ <code>{key}</code> = <code>{emoji_id}</code>",
             reply_markup=admin_menu_kb(),
             parse_mode="HTML",
         )
@@ -386,7 +434,7 @@ async def admin_text_input(message: Message):
 
     await set_setting(key, value)
     await message.answer(
-        f"✅ সেভ হয়েছে\n<code>{key}</code> =\n{value}",
+        f"✅ সেভ\n<code>{key}</code> =\n{value}",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
