@@ -1,11 +1,25 @@
 TEXTS = {
     "choose_language": "Please choose your language / অনুগ্রহ করে আপনার ভাষা নির্বাচন করুন:",
     "language_set": "Language set to English ✅",
+
     "welcome": (
-        "👋 Hello <b>{name}</b>\n\n"
-        "🚀 Welcome to <b>RT VIP JOIN BOT</b>!\n\n"
-        "How can I help you?"
+        '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> '
+        "Welcome to <b>{botName}</b>! "
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        "To join the VIP Channel, send your Quotex Trader ID. "
+        '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "If you have not opened an account with our Affiliate Link:\n\n"
+        "• Create a new Account using our Link.\n"
+        "• Verify your Account.\n"
+        "• Deposit at least $20.\n\n"
+        '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
+        "Send only an English 8-digit Trader ID. Do not send name, screenshot, or any other info.\n\n"
+        '<tg-emoji emoji-id="5341357385279612709">📘</tg-emoji> '
+        "For details, check the Tutorial below."
     ),
+
     "main_menu": "Main Menu",
     "btn_premium": "🎁 Premium Channel Join Process",
     "btn_create_account": "⭐ How to create new Quotex account",
@@ -14,16 +28,27 @@ TEXTS = {
     "btn_support": "📢 Any question or problem?",
     "btn_status": "📊 My Account Status",
     "btn_back": "⬅️ Back",
+    "btn_tutorial": "📘 Tutorial",
+    "btn_register": "📝 Register & Deposit",
+
+    "invalid_trader_id": (
+        "❌ Invalid format.\n"
+        "Send only an English <b>8-digit</b> Trader ID.\n"
+        "Example: <code>12345678</code>"
+    ),
+    "trader_id_saved": (
+        "✅ Trader ID saved: <code>{trader_id}</code>\n\n"
+        "Verification in progress. If you deposited $20+ via our Affiliate Link, you will get the VIP invite."
+    ),
 
     "premium_info": (
         "🎁 <b>Premium / VIP Join Process</b>\n\n"
         "1️⃣ Click the button below to open the registration link\n"
         "2️⃣ Create a <b>new</b> Quotex account using that link\n"
-        "3️⃣ Make a deposit\n"
-        "4️⃣ After successful deposit you will automatically get VIP group invite link\n\n"
-        "⚠️ Use only the link given by the bot. Old accounts will not be accepted."
+        "3️⃣ Deposit at least $20\n"
+        "4️⃣ After successful deposit you will get the VIP invite link\n\n"
+        "⚠️ Use only the link given by the bot."
     ),
-    "btn_register": "📝 Register & Deposit",
     "waiting_deposit": (
         "⏳ Waiting for your deposit...\n\n"
         "After you deposit under our partner link, the bot will automatically verify and send you the VIP invite link."
@@ -56,7 +81,7 @@ TEXTS = {
         "1. Click the Register button\n"
         "2. Fill the form with new email/phone\n"
         "3. Complete registration\n"
-        "4. Make first deposit\n\n"
+        "4. Deposit at least $20\n\n"
         "Only new accounts created with our link will be accepted."
     ),
     "delete_account_guide": (
