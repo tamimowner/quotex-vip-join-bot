@@ -2,24 +2,39 @@ from sqlalchemy import select
 from database.db import async_session
 from database.models import BotSettings
 from config import settings as env_settings
+from locales import get_text
 
 DEFAULTS = {
     "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE,
     "site_id": env_settings.SITE_ID,
-    "btn_premium": "💎 প্রিমিয়াম VIP জয়েন প্রক্রিয়া",
-    "btn_create_account": "⭐ নতুন কোটেক্স অ্যাকাউন্ট তৈরি",
-    "btn_delete_account": "🗑 পুরাতন অ্যাকাউন্ট ডিলিট গাইড",
-    "btn_public": "📢 ফ্রি সিগন্যাল পাবলিক চ্যানেল",
-    "btn_status": "📊 আমার অ্যাকাউন্ট স্ট্যাটাস",
-    "btn_support": "🆘 সাপোর্ট / হেল্প",
-    "btn_register": "🚀 কোটেক্সে রেজিস্টার ও ডিপোজিট",
+    "btn_premium": "🎁 VIP জয়েন",
+    "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
+    "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
+    "btn_public": "🔗 পাবলিক চ্যানেল",
+    "btn_status": "📊 স্ট্যাটাস",
+    "btn_support": "📢 সাপোর্ট",
+    "btn_register": "📝 রেজিস্টার ও ডিপোজিট",
     "btn_back": "⬅️ ফিরে যান",
+    "btn_settings": "⚙️ সেটিংস",
     "public_channel": "https://t.me/+gLV8BLij6PAxYjE1",
     "support_text": "কোনো সমস্যা হলে অ্যাডমিন: @TEADMIN9",
-    # Welcome media
+    "support_text_bn": "কোনো সমস্যা হলে অ্যাডমিন: @TEADMIN9",
+    "support_text_en": "Any problem? Contact admin: @TEADMIN9",
     "welcome_photo_url": "",
     "welcome_photo_file_id": "",
 }
+
+BUTTON_KEYS = [
+    "btn_premium",
+    "btn_create_account",
+    "btn_delete_account",
+    "btn_public",
+    "btn_status",
+    "btn_support",
+    "btn_register",
+    "btn_back",
+    "btn_settings",
+]
 
 
 async def get_setting(key: str, default: str | None = None) -> str:
@@ -46,6 +61,44 @@ async def set_setting(key: str, value: str) -> None:
         else:
             session.add(BotSettings(key=key, value=value))
         await session.commit()
+
+
+async def get_button_text(key: str, lang: str) -> str:
+    """
+    Resolve button label for user language.
+    Priority: key_bn / key_en → locale default → plain key → DEFAULTS
+    """
+    lang = (lang or "bn").lower()
+    if lang not in ("bn", "en"):
+        lang = "bn"
+
+    # 1) language-specific override from admin
+    specific = await get_setting(f"{key}_{lang}", "")
+    if specific:
+        return specific
+
+    # 2) built-in locale file
+    locale_val = get_text(lang, key)
+    if locale_val and locale_val != key:
+        return locale_val
+
+    # 3) legacy single key (old admin saves)
+    legacy = await get_setting(key, "")
+    if legacy:
+        return legacy
+
+    return DEFAULTS.get(key, key)
+
+
+async def get_support_text(lang: str) -> str:
+    lang = (lang or "bn").lower()
+    specific = await get_setting(f"support_text_{lang}", "")
+    if specific:
+        return specific
+    legacy = await get_setting("support_text", "")
+    if legacy:
+        return legacy
+    return get_text(lang, "support")
 
 
 async def get_affiliate_url(click_id: str) -> str:
