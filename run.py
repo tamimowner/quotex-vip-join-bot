@@ -13,7 +13,6 @@ from aiogram.enums import ParseMode
 from config import settings
 from database.db import init_db
 from handlers import setup_routers
-from handlers.chat_member import router as chat_member_router
 from postback import app as fastapi_app
 
 
@@ -39,9 +38,8 @@ async def run_bot():
     )
     dp = Dispatcher()
 
-    root_router = setup_routers()
-    dp.include_router(root_router)
-    dp.include_router(chat_member_router)
+    # setup_routers() already includes start, menu, chat_member — include once only
+    dp.include_router(setup_routers())
 
     await init_db()
     print("Database ready")
@@ -54,7 +52,6 @@ if __name__ == "__main__":
     print(f"PORT={port}")
     print(f"DATABASE_URL scheme ok={settings.database_url.startswith('postgresql+asyncpg')}")
 
-    # HTTP must start first so Railway health/domain works even if bot has issues
     api_thread = threading.Thread(target=run_api, daemon=True)
     api_thread.start()
     print(f"Postback server thread started on port {port}")
@@ -64,5 +61,4 @@ if __name__ == "__main__":
     except Exception:
         print("Bot crashed:")
         traceback.print_exc()
-        # Keep process alive so /health still works for debugging
         api_thread.join()
