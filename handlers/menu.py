@@ -11,7 +11,7 @@ from keyboards import (
     settings_language_keyboard,
 )
 from locales import get_text
-from services.settings_store import get_affiliate_url, get_setting
+from services.settings_store import get_affiliate_url, get_setting, get_support_text
 
 router = Router()
 
@@ -27,7 +27,6 @@ async def get_user(telegram_id: int) -> User | None:
 
 
 async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
-    """edit_text fails on photo messages — fallback to new message."""
     try:
         await callback.message.edit_text(
             text,
@@ -155,7 +154,7 @@ async def menu_public(callback: CallbackQuery):
 async def menu_support(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    support = await get_setting("support_text", get_text(lang, "support"))
+    support = await get_support_text(lang)
     await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
