@@ -21,15 +21,22 @@ TEXTS = {
     ),
 
     "main_menu": "Main Menu",
-    "btn_premium": "🎁 Premium Channel Join Process",
-    "btn_create_account": "⭐ How to create new Quotex account",
-    "btn_delete_account": "❌ How to delete old Quotex account",
-    "btn_public": "🔗 I want to join your public channel",
-    "btn_support": "📢 Any question or problem?",
-    "btn_status": "📊 My Account Status",
+    "btn_premium": "🎁 VIP Join",
+    "btn_create_account": "⭐ New Account",
+    "btn_delete_account": "❌ Delete Account",
+    "btn_public": "🔗 Public Channel",
+    "btn_support": "📢 Support",
+    "btn_status": "📊 Status",
     "btn_back": "⬅️ Back",
     "btn_tutorial": "📘 Tutorial",
     "btn_register": "📝 Register & Deposit",
+    "btn_settings": "⚙️ Settings",
+    "btn_change_language": "🌐 Change Language",
+    "settings_title": (
+        "⚙️ <b>Settings</b>\n\n"
+        "You can change language here.\n"
+        "More options are below."
+    ),
 
     "invalid_trader_id": (
         "❌ Invalid format.\n"
