@@ -2,7 +2,6 @@ TEXTS = {
     "choose_language": "Please choose your language / অনুগ্রহ করে আপনার ভাষা নির্বাচন করুন:",
     "language_set": "ভাষা বাংলায় সেট করা হয়েছে ✅",
 
-    # Custom emoji helper format: <tg-emoji emoji-id="ID">fallback</tg-emoji>
     "welcome": (
         '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> '
         "<b>{botName}</b> -এ স্বাগতম! "
@@ -22,15 +21,22 @@ TEXTS = {
     ),
 
     "main_menu": "মেইন মেনু",
-    "btn_premium": "🎁 প্রিমিয়াম চ্যানেল জয়েন প্রক্রিয়া",
-    "btn_create_account": "⭐ কীভাবে নতুন কোটেক্স অ্যাকাউন্ট তৈরি করবেন",
-    "btn_delete_account": "❌ কীভাবে পুরাতন কোটেক্স অ্যাকাউন্ট ডিলিট করবেন",
-    "btn_public": "🔗 আমি আপনার পাবলিক চ্যানেলে জয়েন করতে চাই",
-    "btn_support": "📢 কোন প্রশ্ন বা সমস্যা?",
-    "btn_status": "📊 আমার অ্যাকাউন্ট স্ট্যাটাস",
+    "btn_premium": "🎁 VIP জয়েন",
+    "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
+    "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
+    "btn_public": "🔗 পাবলিক চ্যানেল",
+    "btn_support": "📢 সাপোর্ট",
+    "btn_status": "📊 স্ট্যাটাস",
     "btn_back": "⬅️ ফিরে যান",
     "btn_tutorial": "📘 Tutorial",
     "btn_register": "📝 রেজিস্টার ও ডিপোজিট",
+    "btn_settings": "⚙️ সেটিংস",
+    "btn_change_language": "🌐 ভাষা পরিবর্তন",
+    "settings_title": (
+        "⚙️ <b>সেটিংস</b>\n\n"
+        "এখান থেকে ভাষা পরিবর্তন করতে পারবেন।\n"
+        "আরও অপশন নিচে পাবেন।"
+    ),
 
     "invalid_trader_id": (
         "❌ ভুল ফরম্যাট।\n"
