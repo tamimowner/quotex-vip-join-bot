@@ -1,6 +1,6 @@
 import re
-from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import CommandStart
 from sqlalchemy import select
 from database.models import User
@@ -8,6 +8,7 @@ from database.db import async_session
 from keyboards import language_keyboard, main_menu
 from locales import get_text
 from config import settings
+from services.settings_store import get_setting
 
 router = Router()
 
@@ -15,9 +16,32 @@ BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
 TRADER_ID_RE = re.compile(r"^[0-9]{8}$")
 
 
-async def _send_welcome(message: Message, lang: str, reply_markup=None):
+async def _send_welcome(target: Message, lang: str, reply_markup=None):
     text = get_text(lang, "welcome", botName=BOT_DISPLAY_NAME)
-    await message.answer(
+    file_id = await get_setting("welcome_photo_file_id", "")
+    photo_url = await get_setting("welcome_photo_url", "")
+
+    try:
+        if file_id:
+            await target.answer_photo(
+                photo=file_id,
+                caption=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+            )
+            return
+        if photo_url:
+            await target.answer_photo(
+                photo=photo_url,
+                caption=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+            )
+            return
+    except Exception as e:
+        print(f"Welcome photo failed: {e}")
+
+    await target.answer(
         text,
         reply_markup=reply_markup,
         parse_mode="HTML",
@@ -97,7 +121,6 @@ async def receive_trader_id(message: Message):
 
 @router.message(F.text)
 async def fallback_text(message: Message):
-    """Reject non-ID text that looks like attempted ID submission."""
     text = (message.text or "").strip()
     if text.startswith("/"):
         return
@@ -109,7 +132,6 @@ async def fallback_text(message: Message):
         user = result.scalar_one_or_none()
         lang = (user.language if user else None) or "bn"
 
-    # If user sent digits but wrong length / mixed content
     if any(ch.isdigit() for ch in text) or len(text) <= 20:
         if not TRADER_ID_RE.match(text):
             await message.answer(
