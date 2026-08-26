@@ -44,8 +44,13 @@ TEXTS = {
         "Example: <code>12345678</code>"
     ),
     "trader_id_saved": (
-        "✅ Trader ID saved: <code>{trader_id}</code>\n\n"
-        "Verification in progress. If you deposited $20+ via our Affiliate Link, you will get the VIP invite."
+        "✅ Trader ID saved: <code>{trader_id}</code>"
+    ),
+    "need_deposit_hint": (
+        "⏳ Not verified yet.\n\n"
+        "Open an account with our Affiliate Link and deposit at least <b>${min_deposit}</b>.\n"
+        "When deposit + Trader ID match, you will get the VIP link.\n\n"
+        "Use the button below to register."
     ),
 
     "premium_info": (
@@ -53,8 +58,10 @@ TEXTS = {
         "1️⃣ Click the button below to open the registration link\n"
         "2️⃣ Create a <b>new</b> Quotex account using that link\n"
         "3️⃣ Deposit at least $20\n"
-        "4️⃣ After successful deposit you will get the VIP invite link\n\n"
-        "⚠️ Use only the link given by the bot."
+        "4️⃣ Send your 8-digit Trader ID to the bot\n"
+        "5️⃣ After verification you will get the VIP invite link\n\n"
+        "⚠️ Use only the Affiliate Link from the bot.\n"
+        "Partner ID (lid): <code>1480996</code>"
     ),
     "waiting_deposit": (
         "⏳ Waiting for your deposit...\n\n"
@@ -70,7 +77,7 @@ TEXTS = {
     ),
     "already_joined": "✅ You have already joined the VIP group.",
     "status_title": "📊 <b>Your Account Status</b>\n\n",
-    "status_not_verified": "❌ Not verified yet. Please register & deposit first.",
+    "status_not_verified": "❌ Not verified yet. Register with our link and deposit $20+ first.",
     "status_verified": (
         "✅ Status: <b>Verified</b>\n"
         "🆔 Trader ID: <code>{trader_id}</code>\n"
@@ -85,11 +92,12 @@ TEXTS = {
     "support": "Any problem? Contact admin: @TEADMIN9",
     "create_account_guide": (
         "⭐ <b>How to create new Quotex account</b>\n\n"
-        "1. Click the Register button\n"
+        "1. Click the <b>Register</b> button below\n"
         "2. Fill the form with new email/phone\n"
         "3. Complete registration\n"
-        "4. Deposit at least $20\n\n"
-        "Only new accounts created with our link will be accepted."
+        "4. Deposit at least $20\n"
+        "5. Send your 8-digit Trader ID to the bot\n\n"
+        "Only new accounts created with our Affiliate Link (lid=<code>1480996</code>) are accepted."
     ),
     "delete_account_guide": (
         "❌ <b>How to delete old Quotex account</b>\n\n"
