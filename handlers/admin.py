@@ -1,20 +1,28 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
+from aiogram.filters import Command, BaseFilter
 from sqlalchemy import select, func
 from config import settings
 from database.db import async_session
 from database.models import User, PostbackLog
-from services.settings_store import get_setting, set_setting, DEFAULTS
+from services.settings_store import get_setting, set_setting
 
 router = Router()
 
-# Simple in-memory wait state for admin text input
 _pending: dict[int, str] = {}
 
 
 def is_admin(user_id: int) -> bool:
     return user_id in settings.admin_ids
+
+
+class AdminPendingFilter(BaseFilter):
+    async def __call__(self, message: Message) -> bool:
+        return bool(
+            message.from_user
+            and message.from_user.id in _pending
+            and is_admin(message.from_user.id)
+        )
 
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
@@ -36,7 +44,8 @@ async def cmd_admin(message: Message):
     await message.answer(
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
         "এখান থেকে কোটেক্স লিংক, বাটন ইমোজি ও সেটিংস ম্যানেজ করুন।\n\n"
-        f"আপনার ID: <code>{message.from_user.id}</code>",
+        f"আপনার ID: <code>{message.from_user.id}</code>\n\n"
+        "⚠️ Railway Variables-এ <code>ADMIN_IDS</code>-এ এই ID থাকতে হবে।",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
@@ -50,10 +59,10 @@ async def adm_stats(callback: CallbackQuery):
     async with async_session() as session:
         total = await session.scalar(select(func.count()).select_from(User)) or 0
         verified = await session.scalar(
-            select(func.count()).select_from(User).where(User.is_verified == True)  # noqa: E712
+            select(func.count()).select_from(User).where(User.is_verified.is_(True))
         ) or 0
         joined = await session.scalar(
-            select(func.count()).select_from(User).where(User.has_joined == True)  # noqa: E712
+            select(func.count()).select_from(User).where(User.has_joined.is_(True))
         ) or 0
         posts = await session.scalar(select(func.count()).select_from(PostbackLog)) or 0
         deposits = await session.scalar(select(func.coalesce(func.sum(User.total_deposit), 0))) or 0
@@ -77,9 +86,7 @@ async def adm_users(callback: CallbackQuery):
         await callback.answer("Forbidden", show_alert=True)
         return
     async with async_session() as session:
-        result = await session.execute(
-            select(User).order_by(User.id.desc()).limit(10)
-        )
+        result = await session.execute(select(User).order_by(User.id.desc()).limit(10))
         users = result.scalars().all()
 
     lines = []
@@ -104,10 +111,9 @@ async def adm_link(callback: CallbackQuery):
     await callback.message.edit_text(
         f"🔗 <b>বর্তমান কোটেক্স পার্টনার লিংক</b>\n\n"
         f"<code>{current}</code>\n\n"
-        f"নতুন লিংক পাঠান।\n"
-        f"উদাহরণ:\n"
+        f"নতুন লিংক পাঠান (ডিরেক্ট Quotex):\n"
         f"<code>https://broker-qx.pro/sign-up/?lid=1480996&click_id={{click_id}}&site_id={{site_id}}</code>\n\n"
-        f"⚠️ <code>{{click_id}}</code> ও <code>{{site_id}}</code> রাখুন যাতে ট্র্যাকিং কাজ করে।",
+        f"⚠️ <code>{{click_id}}</code> ও <code>{{site_id}}</code> রাখবেন।",
         parse_mode="HTML",
     )
     await callback.answer()
@@ -155,7 +161,7 @@ async def adm_btns(callback: CallbackQuery):
     ])
     await callback.message.edit_text(
         "💎 <b>বাটন টেক্সট / ইমোজি সেট</b>\n\n"
-        "যে বাটন বদলাতে চান সিলেক্ট করুন, তারপর নতুন টেক্সট + ইমোজি পাঠান।\n"
+        "বাটন সিলেক্ট করুন → নতুন টেক্সট + ইমোজি পাঠান\n"
         "উদাহরণ: <code>💎 প্রিমিয়াম VIP জয়েন</code>",
         reply_markup=kb,
         parse_mode="HTML",
@@ -189,16 +195,9 @@ async def adm_set_key(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(F.text)
+@router.message(AdminPendingFilter(), F.text)
 async def admin_text_input(message: Message):
-    """Capture admin pending input. Must be registered carefully — only if pending."""
     uid = message.from_user.id
-    if uid not in _pending:
-        return
-    if not is_admin(uid):
-        _pending.pop(uid, None)
-        return
-
     key = _pending.pop(uid)
     value = message.text.strip()
     await set_setting(key, value)
