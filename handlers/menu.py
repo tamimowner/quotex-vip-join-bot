@@ -3,11 +3,19 @@ from aiogram.types import CallbackQuery
 from sqlalchemy import select
 from database.models import User
 from database.db import async_session
-from keyboards import main_menu, premium_keyboard, back_keyboard
+from keyboards import (
+    main_menu,
+    premium_keyboard,
+    back_keyboard,
+    settings_keyboard,
+    settings_language_keyboard,
+)
 from locales import get_text
 from services.settings_store import get_affiliate_url, get_setting
 
 router = Router()
+
+BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
 
 
 async def get_user(telegram_id: int) -> User | None:
@@ -18,15 +26,53 @@ async def get_user(telegram_id: int) -> User | None:
         return result.scalar_one_or_none()
 
 
+async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
+    """edit_text fails on photo messages — fallback to new message."""
+    try:
+        await callback.message.edit_text(
+            text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    except Exception:
+        await callback.message.answer(
+            text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+
+
 @router.callback_query(F.data == "menu:back")
 async def menu_back(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    name = callback.from_user.first_name or "User"
-    await callback.message.edit_text(
-        get_text(lang, "welcome", name=name),
-        reply_markup=await main_menu(lang),
-        parse_mode="HTML",
+    text = get_text(lang, "welcome", botName=BOT_DISPLAY_NAME)
+    await _safe_edit(callback, text, reply_markup=await main_menu(lang))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:settings")
+async def menu_settings(callback: CallbackQuery):
+    user = await get_user(callback.from_user.id)
+    lang = user.language if user else "bn"
+    await _safe_edit(
+        callback,
+        get_text(lang, "settings_title"),
+        reply_markup=await settings_keyboard(lang),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "settings:lang")
+async def settings_lang(callback: CallbackQuery):
+    user = await get_user(callback.from_user.id)
+    lang = user.language if user else "bn"
+    await _safe_edit(
+        callback,
+        get_text(lang, "choose_language"),
+        reply_markup=await settings_language_keyboard(lang),
     )
     await callback.answer()
 
@@ -37,31 +83,28 @@ async def menu_premium(callback: CallbackQuery):
     lang = user.language if user else "bn"
 
     if user and user.is_verified and user.invite_link and not user.has_joined:
-        await callback.message.edit_text(
+        await _safe_edit(
+            callback,
             get_text(lang, "invite_ready", link=user.invite_link),
             reply_markup=await back_keyboard(lang),
-            parse_mode="HTML",
-            disable_web_page_preview=True,
         )
         await callback.answer()
         return
 
     if user and user.has_joined:
-        await callback.message.edit_text(
+        await _safe_edit(
+            callback,
             get_text(lang, "already_joined"),
             reply_markup=await back_keyboard(lang),
-            parse_mode="HTML",
         )
         await callback.answer()
         return
 
-    # Direct Quotex partner link with this user's telegram id as click_id
     register_url = await get_affiliate_url(str(callback.from_user.id))
-
-    await callback.message.edit_text(
+    await _safe_edit(
+        callback,
         get_text(lang, "premium_info"),
         reply_markup=await premium_keyboard(lang, register_url),
-        parse_mode="HTML",
     )
     await callback.answer()
 
@@ -88,11 +131,7 @@ async def menu_status(callback: CallbackQuery):
             joined=joined,
         )
 
-    await callback.message.edit_text(
-        text,
-        reply_markup=await back_keyboard(lang),
-        parse_mode="HTML",
-    )
+    await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
 
@@ -103,13 +142,12 @@ async def menu_public(callback: CallbackQuery):
     channel = await get_setting("public_channel")
     text = get_text(lang, "public_channel")
     if channel:
-        text = f"🔗 ফ্রি সিগন্যাল পাবলিক চ্যানেল:\n{channel}" if lang == "bn" else f"🔗 Free Signal Public Channel:\n{channel}"
-    await callback.message.edit_text(
-        text,
-        reply_markup=await back_keyboard(lang),
-        parse_mode="HTML",
-        disable_web_page_preview=True,
-    )
+        text = (
+            f"🔗 ফ্রি সিগন্যাল পাবলিক চ্যানেল:\n{channel}"
+            if lang == "bn"
+            else f"🔗 Free Signal Public Channel:\n{channel}"
+        )
+    await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
 
@@ -118,11 +156,7 @@ async def menu_support(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
     support = await get_setting("support_text", get_text(lang, "support"))
-    await callback.message.edit_text(
-        support,
-        reply_markup=await back_keyboard(lang),
-        parse_mode="HTML",
-    )
+    await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
 
@@ -130,10 +164,10 @@ async def menu_support(callback: CallbackQuery):
 async def menu_create(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    await callback.message.edit_text(
+    await _safe_edit(
+        callback,
         get_text(lang, "create_account_guide"),
         reply_markup=await back_keyboard(lang),
-        parse_mode="HTML",
     )
     await callback.answer()
 
@@ -142,9 +176,9 @@ async def menu_create(callback: CallbackQuery):
 async def menu_delete(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    await callback.message.edit_text(
+    await _safe_edit(
+        callback,
         get_text(lang, "delete_account_guide"),
         reply_markup=await back_keyboard(lang),
-        parse_mode="HTML",
     )
     await callback.answer()
