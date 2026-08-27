@@ -7,14 +7,15 @@ from locales import get_text
 DEFAULTS = {
     "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE,
     "site_id": env_settings.SITE_ID,
-    "min_deposit": "20",
+    "min_deposit": "0",
+    "vip_group_link": env_settings.VIP_GROUP_LINK or "",
     "btn_premium": "🎁 VIP জয়েন",
     "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
     "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
     "btn_public": "🔗 পাবলিক চ্যানেল",
     "btn_status": "📊 স্ট্যাটাস",
     "btn_support": "📢 সাপোর্ট",
-    "btn_register": "📝 রেজিস্টার ও ডিপোজিট",
+    "btn_register": "📝 রেজিস্টার",
     "btn_back": "⬅️ ফিরে যান",
     "btn_settings": "⚙️ সেটিংস",
     "public_channel": "https://t.me/+gLV8BLij6PAxYjE1",
@@ -65,11 +66,19 @@ async def set_setting(key: str, value: str) -> None:
 
 
 async def get_min_deposit() -> float:
-    raw = await get_setting("min_deposit", "20")
+    raw = await get_setting("min_deposit", "0")
     try:
         return float(raw)
     except (TypeError, ValueError):
-        return 20.0
+        return 0.0
+
+
+async def get_vip_group_link() -> str:
+    """Static VIP invite link — same for all verified users."""
+    link = await get_setting("vip_group_link", "")
+    if link:
+        return link.strip()
+    return (env_settings.VIP_GROUP_LINK or "").strip()
 
 
 async def get_button_text(key: str, lang: str) -> str:
@@ -106,7 +115,6 @@ async def get_support_text(lang: str) -> str:
 async def get_affiliate_url(click_id: str) -> str:
     base = await get_setting("affiliate_link_base")
     site_id = await get_setting("site_id")
-    # Keep click_id for tracking when present; pure lid link still works for postback
     if "{click_id}" not in base and click_id:
         sep = "&" if "?" in base else "?"
         base = f"{base}{sep}click_id={{click_id}}"
