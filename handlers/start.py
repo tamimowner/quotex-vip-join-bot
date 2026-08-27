@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func
 from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard
@@ -42,8 +42,8 @@ async def _send_welcome(
     reply_markup=None,
 ):
     bot_name = await get_bot_display_name(bot)
-    # Admin/settings এ যে affiliate link সেট আছে, সেটাই
-    register_url = await get_affiliate_url(str(telegram_id))
+    # সবার জন্য একই স্ট্যাটিক affiliate লিংক
+    register_url = await get_affiliate_url()
     text = get_text(
         lang,
         "welcome",
@@ -132,7 +132,7 @@ async def set_language(callback: CallbackQuery, bot: Bot):
         await callback.message.answer(get_text(lang, "language_set"))
     await _send_welcome(
         callback.message,
-        lang,
+        lang trans,
         callback.from_user.id,
         bot,
         reply_markup=await main_menu(lang),
@@ -142,9 +142,15 @@ async def set_language(callback: CallbackQuery, bot: Bot):
 
 @router.message(F.text.regexp(r"^[0-9]{6,12}$"))
 async def receive_trader_id(message: Message, bot: Bot):
+    """
+    শুধু postback_logs-এ থাকা trader_id দিয়েই verify।
+    আমাদের লিংক দিয়ে অ্যাকাউন্ট না খুললে postback আসে না → verify হয় না।
+    """
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
     min_dep = await get_min_deposit()
+    # সবার একই register লিংক
+    register_url = await get_affiliate_url()
 
     async with async_session() as session:
         result = await session.execute(
@@ -158,12 +164,10 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
+        # শুধু trader_id দিয়ে postback ম্যাচ (click_id নয় — লিংক সবার সেম)
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
-                or_(
-                    PostbackLog.trader_id == trader_id,
-                    PostbackLog.click_id == str(tg_id),
-                )
+                PostbackLog.trader_id == trader_id
             )
         ) or 0
 
@@ -174,23 +178,11 @@ async def receive_trader_id(message: Message, bot: Bot):
                 )
             ) or 0
         )
-        dep_by_click = float(
-            await session.scalar(
-                select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
-                    PostbackLog.click_id == str(tg_id)
-                )
-            ) or 0
-        )
-        total = max(dep_sum, dep_by_click, float(user.total_deposit or 0))
+        total = max(dep_sum, float(user.total_deposit or 0))
 
         log_result = await session.execute(
             select(PostbackLog)
-            .where(
-                or_(
-                    PostbackLog.trader_id == trader_id,
-                    PostbackLog.click_id == str(tg_id),
-                )
-            )
+            .where(PostbackLog.trader_id == trader_id)
             .order_by(PostbackLog.id.desc())
             .limit(1)
         )
@@ -204,8 +196,7 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         await session.commit()
 
-        register_url = await get_affiliate_url(str(tg_id))
-
+        # আমাদের লিংক দিয়ে অ্যাকাউন্ট না খুললে postback নেই → verify নয়
         if pb_count == 0 and not user.is_verified:
             await message.answer(
                 get_text(lang, "not_from_our_link", trader_id=trader_id),
