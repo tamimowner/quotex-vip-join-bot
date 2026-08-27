@@ -7,6 +7,7 @@ from locales import get_text
 DEFAULTS = {
     "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE,
     "site_id": env_settings.SITE_ID,
+    "min_deposit": "20",
     "btn_premium": "🎁 VIP জয়েন",
     "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
     "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
@@ -63,26 +64,27 @@ async def set_setting(key: str, value: str) -> None:
         await session.commit()
 
 
+async def get_min_deposit() -> float:
+    raw = await get_setting("min_deposit", "20")
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 20.0
+
+
 async def get_button_text(key: str, lang: str) -> str:
-    """
-    Resolve button label for user language.
-    Priority: key_bn / key_en → locale default → plain key → DEFAULTS
-    """
     lang = (lang or "bn").lower()
     if lang not in ("bn", "en"):
         lang = "bn"
 
-    # 1) language-specific override from admin
     specific = await get_setting(f"{key}_{lang}", "")
     if specific:
         return specific
 
-    # 2) built-in locale file
     locale_val = get_text(lang, key)
     if locale_val and locale_val != key:
         return locale_val
 
-    # 3) legacy single key (old admin saves)
     legacy = await get_setting(key, "")
     if legacy:
         return legacy
@@ -104,7 +106,8 @@ async def get_support_text(lang: str) -> str:
 async def get_affiliate_url(click_id: str) -> str:
     base = await get_setting("affiliate_link_base")
     site_id = await get_setting("site_id")
-    if "{click_id}" not in base:
+    # Keep click_id for tracking when present; pure lid link still works for postback
+    if "{click_id}" not in base and click_id:
         sep = "&" if "?" in base else "?"
         base = f"{base}{sep}click_id={{click_id}}"
     if "{site_id}" not in base:
