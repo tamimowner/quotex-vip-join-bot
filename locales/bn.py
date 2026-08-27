@@ -3,21 +3,17 @@ TEXTS = {
     "language_set": "ভাষা বাংলায় সেট করা হয়েছে ✅",
 
     "welcome": (
-        '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> '
-        "<b>{botName}</b> -এ স্বাগতম! "
-        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
-        "VIP Channel-এ যুক্ত হতে আপনার Quotex Trader ID পাঠান। "
-        '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "যদি আমাদের Affiliate Link দিয়ে Account খোলা না থাকে, তাহলে:\n\n"
-        "• আমাদের Link দিয়ে নতুন Account তৈরি করুন।\n"
-        "• Account Verify করুন।\n"
-        "• ন্যূনতম ডিপোজিট করুন (যদি লাগে)।\n\n"
-        '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
-        "শুধুমাত্র ইংরেজি 6–12 সংখ্যার Trader ID পাঠাবেন। নাম, Screenshot বা অন্য কোনো তথ্য পাঠাবেন না।\n\n"
-        '<tg-emoji emoji-id="5341357385279612709">📘</tg-emoji> '
-        "বিস্তারিত জানতে নিচের Tutorial দেখুন।"
+        "👋 <b>{botName}</b> -এ স্বাগতম! ✨\n\n"
+        "📢 VIP Channel-এ যুক্ত হতে আপনার Quotex <b>Trader ID</b> পাঠান। 👇\n\n"
+        "📌 যদি আমাদের Affiliate Link দিয়ে Account খোলা না থাকে:\n\n"
+        "• আমাদের Link দিয়ে নতুন Account তৈরি করুন\n"
+        "• Account Verify করুন\n"
+        "• ন্যূনতম ডিপোজিট করুন (যদি লাগে)\n\n"
+        "⚠️ শুধুমাত্র ইংরেজি 6–12 সংখ্যার Trader ID পাঠাবেন।\n\n"
+        "━━━━━━━━━━━━━━━━\n"
+        "🔗 <b>Quotex অ্যাকাউন্ট তৈরি লিংক:</b>\n"
+        "{register_url}\n"
+        "━━━━━━━━━━━━━━━━"
     ),
 
     "main_menu": "মেইন মেনু",
