@@ -9,14 +9,13 @@ from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard
 from locales import get_text
 from config import settings
-from services.settings_store import get_setting, get_affiliate_url
+from services.settings_store import get_setting, get_affiliate_url, get_min_deposit
 from services.invite import create_unique_invite
 
 router = Router()
 
 BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
 TRADER_ID_RE = re.compile(r"^[0-9]{8}$")
-MIN_DEPOSIT = 20.0
 
 
 async def _send_welcome(target: Message, lang: str, reply_markup=None):
@@ -106,6 +105,7 @@ async def set_language(callback: CallbackQuery):
 async def receive_trader_id(message: Message, bot: Bot):
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
+    min_dep = await get_min_deposit()
 
     async with async_session() as session:
         result = await session.execute(
@@ -119,8 +119,7 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
-        # Any postback under OUR partner system for this trader / click?
-        # Postback only arrives if account was created via our affiliate link.
+        # Postback only exists if account came through OUR partner link
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
                 or_(
@@ -169,9 +168,7 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         register_url = await get_affiliate_url(str(tg_id))
 
-        # 1) No postback at all → NOT our affiliate link
         if pb_count == 0 and not user.is_verified:
-            await session.commit()
             await message.answer(
                 get_text(lang, "not_from_our_link", trader_id=trader_id),
                 parse_mode="HTML",
@@ -179,18 +176,16 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
-        # 2) Our link found, but deposit not enough yet
-        if total < MIN_DEPOSIT and not user.is_verified:
+        if total < min_dep and not user.is_verified:
             await message.answer(
-                get_text(lang, "trader_id_saved", trader_id=trader_id)
+                get_text(lang, "account_created_success", trader_id=trader_id, min_deposit=int(min_dep))
                 + "\n\n"
-                + get_text(lang, "need_deposit_hint", min_deposit=int(MIN_DEPOSIT)),
+                + get_text(lang, "need_deposit_hint", min_deposit=int(min_dep)),
                 parse_mode="HTML",
                 reply_markup=await premium_keyboard(lang, register_url),
             )
             return
 
-        # 3) Our link + enough deposit → verify + VIP invite
         if not user.is_verified:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
