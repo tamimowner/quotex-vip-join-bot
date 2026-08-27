@@ -3,13 +3,19 @@ TEXTS = {
     "language_set": "Language set to English ✅",
 
     "welcome": (
-        "👋 Welcome to <b>{botName}</b>! ✨\n\n"
-        "📢 To join the VIP Channel, send your Quotex <b>Trader ID</b>. 👇\n\n"
-        "📌 If you have not opened an account with our Affiliate Link:\n\n"
+        '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> '
+        "Welcome to <b>{botName}</b>! "
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        "To join the VIP Channel, send your Quotex <b>Trader ID</b>. "
+        '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "If you have not opened an account with our Affiliate Link:\n\n"
         "• Create a new Account using our Link\n"
         "• Verify your Account\n"
         "• Make the minimum deposit (if required)\n\n"
-        "⚠️ Send only an English 6–12 digit Trader ID.\n\n"
+        '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
+        "Send only an English 6–12 digit Trader ID.\n\n"
         "━━━━━━━━━━━━━━━━\n"
         "🔗 <b>Quotex account create link:</b>\n"
         "{register_url}\n"
