@@ -46,6 +46,17 @@ TEXTS = {
     "trader_id_saved": (
         "✅ Trader ID saved: <code>{trader_id}</code>"
     ),
+    "not_from_our_link": (
+        "❌ <b>Account was not created with our Affiliate Link</b>\n\n"
+        "Trader ID: <code>{trader_id}</code>\n\n"
+        "You did not open the account via our link, or it is not in our system yet.\n\n"
+        "✅ What to do:\n"
+        "1️⃣ Click the button below and create a <b>new</b> account\n"
+        "2️⃣ Verify your account\n"
+        "3️⃣ Deposit at least $20\n"
+        "4️⃣ Send your 8-digit Trader ID again\n\n"
+        "⚠️ Old accounts or other partners' links are not accepted."
+    ),
     "need_deposit_hint": (
         "⏳ Not verified yet.\n\n"
         "Open an account with our Affiliate Link and deposit at least <b>${min_deposit}</b>.\n"
