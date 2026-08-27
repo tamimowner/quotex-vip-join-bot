@@ -14,17 +14,40 @@ from services.invite import create_unique_invite
 
 router = Router()
 
-BOT_DISPLAY_NAME = "SKV VIP"
-# Quotex Trader IDs are usually 8 digits; allow 6-12 to be safe
 TRADER_ID_RE = re.compile(r"^[0-9]{6,12}$")
 
+_bot_name_cache: str | None = None
 
-async def _send_welcome(target: Message, lang: str, telegram_id: int, reply_markup=None):
+
+async def get_bot_display_name(bot: Bot) -> str:
+    """Telegram-এ যে নাম সেট করা আছে, সেটাই দেখাবে (হার্ডকোড নয়)।"""
+    global _bot_name_cache
+    if _bot_name_cache:
+        return _bot_name_cache
+    try:
+        me = await bot.get_me()
+        name = (me.full_name or me.first_name or me.username or "Bot").strip()
+        _bot_name_cache = name
+        return name
+    except Exception as e:
+        print(f"get_me failed: {e}")
+        return "Bot"
+
+
+async def _send_welcome(
+    target: Message,
+    lang: str,
+    telegram_id: int,
+    bot: Bot,
+    reply_markup=None,
+):
+    bot_name = await get_bot_display_name(bot)
+    # Admin/settings এ যে affiliate link সেট আছে, সেটাই
     register_url = await get_affiliate_url(str(telegram_id))
     text = get_text(
         lang,
         "welcome",
-        botName=BOT_DISPLAY_NAME,
+        botName=bot_name,
         register_url=register_url,
     )
     file_id = await get_setting("welcome_photo_file_id", "")
@@ -59,7 +82,7 @@ async def _send_welcome(target: Message, lang: str, telegram_id: int, reply_mark
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message):
+async def cmd_start(message: Message, bot: Bot):
     async with async_session() as session:
         result = await session.execute(
             select(User).where(User.telegram_id == message.from_user.id)
@@ -86,12 +109,13 @@ async def cmd_start(message: Message):
             message,
             lang,
             message.from_user.id,
+            bot,
             reply_markup=await main_menu(lang),
         )
 
 
 @router.callback_query(F.data.startswith("lang:"))
-async def set_language(callback: CallbackQuery):
+async def set_language(callback: CallbackQuery, bot: Bot):
     lang = callback.data.split(":")[1]
     async with async_session() as session:
         result = await session.execute(
@@ -110,6 +134,7 @@ async def set_language(callback: CallbackQuery):
         callback.message,
         lang,
         callback.from_user.id,
+        bot,
         reply_markup=await main_menu(lang),
     )
     await callback.answer()
@@ -117,12 +142,6 @@ async def set_language(callback: CallbackQuery):
 
 @router.message(F.text.regexp(r"^[0-9]{6,12}$"))
 async def receive_trader_id(message: Message, bot: Bot):
-    """
-    PHP-style flow:
-    1. User sends Trader ID manually
-    2. We look up postback_logs for that trader_id
-    3. If found (+ deposit ok) → verify → give STATIC VIP link
-    """
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
     min_dep = await get_min_deposit()
