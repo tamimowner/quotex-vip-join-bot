@@ -3,6 +3,7 @@ from database.db import async_session
 from database.models import BotSettings
 from config import settings as env_settings
 from locales import get_text
+import re
 
 DEFAULTS = {
     "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE,
@@ -112,15 +113,26 @@ async def get_support_text(lang: str) -> str:
     return get_text(lang, "support")
 
 
-async def get_affiliate_url(click_id: str) -> str:
-    base = await get_setting("affiliate_link_base")
-    site_id = await get_setting("site_id")
-    if "{click_id}" not in base and click_id:
-        sep = "&" if "?" in base else "?"
-        base = f"{base}{sep}click_id={{click_id}}"
-    if "{site_id}" not in base:
-        base = f"{base}&site_id={{site_id}}"
-    try:
-        return base.format(click_id=click_id, site_id=site_id)
-    except Exception:
-        return base.replace("{click_id}", click_id).replace("{site_id}", site_id)
+async def get_affiliate_url(click_id: str = "") -> str:
+    """
+    সবার জন্য একই স্ট্যাটিক partner/register লিংক।
+    click_id দিয়ে আলাদা URL বানায় না।
+    """
+    base = (await get_setting("affiliate_link_base") or "").strip()
+    site_id = (await get_setting("site_id") or "1").strip()
+
+    # Remove personal click_id placeholders / query params
+    base = base.replace("{click_id}", "").replace("{CLICK_ID}", "")
+    base = re.sub(r"([?&])click_id=[^&]*", r"\1", base)
+    base = re.sub(r"[?&]$", "", base)
+    base = base.replace("?&", "?").replace("&&", "&")
+
+    if "{site_id}" in base:
+        try:
+            base = base.format(site_id=site_id)
+        except Exception:
+            base = base.replace("{site_id}", site_id)
+
+    # Clean trailing ? or &
+    base = base.rstrip("?&")
+    return base
