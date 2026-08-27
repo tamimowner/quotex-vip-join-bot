@@ -57,9 +57,24 @@
   textarea { width: 100%; min-height: 140px; font-family: ui-monospace, monospace; font-size: 0.85rem; }
   .preview {
     background: #0b0f14; border: 1px dashed var(--border); border-radius: 10px;
-    padding: 14px; min-height: 100px; white-space: pre-wrap; line-height: 1.45;
+    padding: 14px; min-height: 100px; line-height: 1.5;
+    font-size: 0.95rem;
   }
-  .preview b { font-weight: 700; }
+  .preview b, .preview strong { font-weight: 700; color: #fff; }
+  .preview i, .preview em { font-style: italic; }
+  .preview code {
+    background: #1e293b; padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, monospace; font-size: 0.85em;
+  }
+  .preview a { color: #60a5fa; text-decoration: underline; }
+  .preview .tg-e {
+    display: inline-block; font-size: 1.25em; vertical-align: middle;
+    margin: 0 1px; filter: drop-shadow(0 0 2px #3b82f6aa);
+  }
+  .preview .tg-e-id {
+    font-size: 0.65em; color: var(--muted); vertical-align: super;
+    margin-left: 1px; font-family: ui-monospace, monospace;
+  }
   .muted { color: var(--muted); font-size: 0.85rem; }
   .stat { font-size: 1.4rem; font-weight: 700; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -73,6 +88,18 @@
   }
   .hidden { display: none !important; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .emoji-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .emoji-bar button {
+    background: #1e293b; border: 1px solid var(--border); padding: 6px 10px;
+    font-size: 1.1rem; border-radius: 8px;
+  }
+  .emoji-bar button:hover { border-color: var(--accent); }
+  .hint {
+    background: #0d1218; border-left: 3px solid var(--accent);
+    padding: 10px 12px; margin-bottom: 12px; border-radius: 0 8px 8px 0;
+    font-size: 0.85rem; color: var(--muted);
+  }
+  .hint code { background: #1e293b; padding: 1px 5px; border-radius: 3px; color: #93c5fd; }
 </style>
 </head>
 <body>
@@ -124,12 +151,20 @@
   </section>
 
   <section id="tab-buttons" class="panel hidden">
+    <div class="hint">
+      বাটন টেক্সট BN/EN আলাদা সেট করুন। <code>Custom emoji id</code> = Telegram premium custom emoji numeric ID (বাটনে icon_custom_emoji_id)।
+    </div>
     <div class="card" id="buttonsBox"></div>
     <button type="button" class="ok" id="btnSaveButtons">Save buttons</button>
   </section>
 
   <section id="tab-messages" class="panel hidden">
     <div class="card">
+      <div class="hint">
+        Telegram HTML: <code><b></code> <code><i></code> <code><code></code> <code><a href="..."></code>
+        এবং premium: <code><tg-emoji emoji-id="ID">👋</tg-emoji></code>
+        — বটে <code>parse_mode=HTML</code> দিয়ে পাঠানো হয়। নিচে লাইভ মকআপ।
+      </div>
       <div class="row" style="margin-bottom:12px">
         <div class="field" style="flex:1;min-width:160px">
           <label>Message key</label>
@@ -141,17 +176,22 @@
         </div>
       </div>
       <div class="field">
-        <label>HTML (supports <b>, <code>, <tg-emoji emoji-id="…">👋</tg-emoji>)</label>
+        <label>Premium tg-emoji insert</label>
+        <div class="emoji-bar" id="emojiBar"></div>
+      </div>
+      <div class="field">
+        <label>HTML source</label>
         <textarea id="msgValue"></textarea>
       </div>
       <div class="field">
-        <label>Live preview (tg-emoji shows fallback emoji here)</label>
+        <label>Live HTML mockup (tg-emoji → fallback + id tip)</label>
         <div class="preview" id="msgPreview"></div>
       </div>
       <p class="muted" id="msgSource"></p>
       <div class="row">
         <button type="button" class="ok" id="btnSaveMsg">Save message</button>
-        <button type="button" class="secondary" id="btnInsertEmoji">Insert sample tg-emoji</button>
+        <button type="button" class="secondary" id="btnWrapBold"><b></button>
+        <button type="button" class="secondary" id="btnWrapCode"><code></button>
       </div>
     </div>
   </section>
@@ -214,6 +254,16 @@ const BUTTON_KEYS = [
   "btn_premium","btn_create_account","btn_delete_account","btn_public",
   "btn_status","btn_support","btn_register","btn_back","btn_settings"
 ];
+const TG_EMOJI_SAMPLES = [
+  { id: "5188481279963715781", fb: "👋", name: "wave" },
+  { id: "5879757713658875847", fb: "✨", name: "spark" },
+  { id: "5215174853895660531", fb: "📢", name: "megaphone" },
+  { id: "6300954126901577963", fb: "👇", name: "down" },
+  { id: "5397782960512444700", fb: "📌", name: "pin" },
+  { id: "5420323339723881652", fb: "⚠️", name: "warn" },
+  { id: "5260293602610833636", fb: "✅", name: "check" },
+  { id: "5447644880824181073", fb: "🎁", name: "gift" },
+];
 let messagesCache = {};
 let messageKeys = [];
 
@@ -239,17 +289,81 @@ function toast(msg) {
   el.style.display = "block";
   setTimeout(() => (el.style.display = "none"), 2200);
 }
+
+/** Safe HTML mockup for Telegram messages (b/i/code/a + tg-emoji) */
 function renderTgHtml(html) {
-  // Browser preview: show fallback inside tg-emoji tags
-  let s = (html || "")
-    .replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
-  s = s.replace(/<tg-emoji[^&]*>([^&]*)<\/tg-emoji>/g, "<span style=\"font-size:1.2em\">$1</span>");
-  s = s.replace(/<b>/g, "<b>").replace(/<\/b>/g, "</b>");
-  s = s.replace(/<i>/g, "<i>").replace(/<\/i>/g, "</i>");
-  s = s.replace(/<code>/g, "<code>").replace(/<\/code>/g, "</code>");
+  const raw = html || "";
+  // Escape everything first
+  let s = raw
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">");
+  // Restore allowed tags (Telegram HTML subset)
+  s = s.replace(/<(\/?)(b|strong|i|em|u|s|code|pre)\s*>/gi, "<$1$2>");
+  // <a href="...">
+  s = s.replace(
+    /<a\s+href=(?:"|"|')([^"'&]+)(?:"|"|')\s*>/gi,
+    '<a href="$1" target="_blank" rel="noopener">'
+  );
+  s = s.replace(/<\/a>/gi, "</a>");
+  // <tg-emoji emoji-id="NUM">fallback</tg-emoji>
+  s = s.replace(
+    /<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
+    function (_, id, fb) {
+      const fallback = fb || "⭐";
+      return (
+        '<span class="tg-e" title="emoji-id: ' +
+        id +
+        '">' +
+        fallback +
+        '</span><span class="tg-e-id">' +
+        id.slice(-4) +
+        "</span>"
+      );
+    }
+  );
   s = s.replace(/\n/g, "<br>");
   return s;
 }
+
+function insertAtCursor(ta, text) {
+  const start = ta.selectionStart || 0;
+  const end = ta.selectionEnd || 0;
+  const v = ta.value;
+  ta.value = v.slice(0, start) + text + v.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + text.length;
+  ta.focus();
+  ta.dispatchEvent(new Event("input"));
+}
+
+function wrapSelection(ta, open, close) {
+  const start = ta.selectionStart || 0;
+  const end = ta.selectionEnd || 0;
+  const v = ta.value;
+  const sel = v.slice(start, end) || "text";
+  ta.value = v.slice(0, start) + open + sel + close + v.slice(end);
+  ta.selectionStart = start + open.length;
+  ta.selectionEnd = start + open.length + sel.length;
+  ta.focus();
+  ta.dispatchEvent(new Event("input"));
+}
+
+// Build emoji bar
+(function () {
+  const bar = $("emojiBar");
+  TG_EMOJI_SAMPLES.forEach((e) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.title = e.name + " id=" + e.id;
+    btn.textContent = e.fb;
+    btn.onclick = () => {
+      const tag =
+        '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ";
+      insertAtCursor($("msgValue"), tag);
+    };
+    bar.appendChild(btn);
+  });
+})();
 
 // Tabs
 document.querySelectorAll("nav .tab").forEach((btn) => {
@@ -273,7 +387,8 @@ function fillLinks(data) {
   $("public_channel").value = data.public_channel || "";
   $("site_id").value = data.site_id || "1";
   $("welcome_photo_url").value = data.welcome_photo_url || "";
-  $("affiliate_preview").textContent = "Preview (same for all users): " + (data.affiliate_link_preview || "");
+  $("affiliate_preview").textContent =
+    "Preview (same for all users): " + (data.affiliate_link_preview || "");
 }
 function fillButtons(data) {
   const box = $("buttonsBox");
@@ -288,13 +403,13 @@ function fillButtons(data) {
     div.innerHTML = `
       <strong>${k}</strong>
       <div class="grid 2" style="margin-top:8px">
-        <div class="field"><label>BN</label><input data-k="${k}_bn" value="${bn.replace(/"/g,""")}" style="width:100%"></div>
-        <div class="field"><label>EN</label><input data-k="${k}_en" value="${en.replace(/"/g,""")}" style="width:100%"></div>
+        <div class="field"><label>BN</label><input data-k="${k}_bn" value="${bn.replace(/"/g, """)}" style="width:100%"></div>
+        <div class="field"><label>EN</label><input data-k="${k}_en" value="${en.replace(/"/g, """)}" style="width:100%"></div>
         <div class="field"><label>Style</label>
           <select data-k="style_${k}">
-            <option value="primary" ${style==="primary"?"selected":""}>primary</option>
-            <option value="success" ${style==="success"?"selected":""}>success</option>
-            <option value="danger" ${style==="danger"?"selected":""}>danger</option>
+            <option value="primary" ${style === "primary" ? "selected" : ""}>primary</option>
+            <option value="success" ${style === "success" ? "selected" : ""}>success</option>
+            <option value="danger" ${style === "danger" ? "selected" : ""}>danger</option>
           </select>
         </div>
         <div class="field"><label>Custom emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%" placeholder="numeric id"></div>
@@ -319,7 +434,9 @@ $("btnSaveLinks").onclick = async () => {
       }),
     });
     toast("Links saved");
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 $("btnSaveButtons").onclick = async () => {
@@ -330,7 +447,9 @@ $("btnSaveButtons").onclick = async () => {
     });
     await api("/api/settings/bulk", { method: "POST", body: JSON.stringify({ items }) });
     toast("Buttons saved");
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 function loadMsgEditor() {
@@ -346,12 +465,8 @@ $("msgLang").onchange = loadMsgEditor;
 $("msgValue").oninput = () => {
   $("msgPreview").innerHTML = renderTgHtml($("msgValue").value);
 };
-$("btnInsertEmoji").onclick = () => {
-  const sample = '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> ';
-  const ta = $("msgValue");
-  ta.value = sample + ta.value;
-  ta.dispatchEvent(new Event("input"));
-};
+$("btnWrapBold").onclick = () => wrapSelection($("msgValue"), "<b>", "</b>");
+$("btnWrapCode").onclick = () => wrapSelection($("msgValue"), "<code>", "</code>");
 $("btnSaveMsg").onclick = async () => {
   try {
     await api("/api/messages", {
@@ -364,7 +479,9 @@ $("btnSaveMsg").onclick = async () => {
     });
     toast("Message saved (HTML + tg-emoji)");
     await loadAll();
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
 $("btnAiGen").onclick = async () => {
@@ -381,7 +498,9 @@ $("btnAiGen").onclick = async () => {
     $("aiOut").value = data.html || "";
     $("aiPreview").innerHTML = renderTgHtml(data.html || "");
     toast("Generated (" + data.source + ")");
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 $("aiOut").oninput = () => {
   $("aiPreview").innerHTML = renderTgHtml($("aiOut").value);
@@ -404,7 +523,9 @@ async function loadStats() {
     <div><div class="muted">Total deposit</div><div class="stat">$${Number(s.total_deposit).toFixed(2)}</div></div>
     <div><div class="muted">Min deposit</div><div class="stat">$${s.min_deposit}</div></div>`;
   const u = await api("/api/users?limit=40");
-  $("usersBody").innerHTML = (u.users || []).map((x) => `
+  $("usersBody").innerHTML = (u.users || [])
+    .map(
+      (x) => `
     <tr>
       <td><code>${x.telegram_id}</code></td>
       <td>${x.full_name || x.username || "-"}</td>
@@ -412,7 +533,9 @@ async function loadStats() {
       <td>$${Number(x.total_deposit || 0).toFixed(2)}</td>
       <td><span class="badge ${x.is_verified ? "ok" : "no"}">${x.is_verified ? "Yes" : "No"}</span></td>
       <td><span class="badge ${x.has_joined ? "ok" : "no"}">${x.has_joined ? "Yes" : "No"}</span></td>
-    </tr>`).join("");
+    </tr>`
+    )
+    .join("");
 }
 
 async function loadAll() {
