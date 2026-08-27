@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 from config import settings
 from database.db import async_session
 from database.models import User, PostbackLog
-from services.settings_store import get_setting, set_setting, get_button_text
+from services.settings_store import get_setting, set_setting, get_button_text, get_min_deposit
 
 router = Router()
 
@@ -46,6 +46,7 @@ class AdminPendingFilter(BaseFilter):
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 মিনিমাম ডিপোজিট", callback_data="adm:mindep", style="success")],
         [InlineKeyboardButton(text="🖼 ওয়েলকাম ফটো (URL/আপলোড)", callback_data="adm:photo", style="success")],
         [InlineKeyboardButton(text="🔗 কোটেক্স পার্টনার লিংক", callback_data="adm:link", style="primary")],
         [InlineKeyboardButton(text="📋 সব বাটন টেক্সট দেখুন", callback_data="adm:map", style="primary")],
@@ -64,15 +65,36 @@ async def cmd_admin(message: Message):
     if not is_admin(message.from_user.id):
         await message.answer("⛔ শুধু অ্যাডমিন ব্যবহার করতে পারবে।")
         return
+    min_dep = await get_min_deposit()
     await message.answer(
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
-        "• বাটন টেক্সট <b>আলাদা করে BN + EN</b> সেট করুন\n"
-        "• ইউজার যে ভাষা সিলেক্ট করবে, সেই ভাষার বাটন দেখাবে\n"
+        f"💰 বর্তমান মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n\n"
+        "• মিনিমাম ডিপোজিট সেট\n"
+        "• বাটন টেক্সট BN + EN\n"
         "• ওয়েলকাম ফটো, কালার, প্রিমিয়াম ইমোজি\n\n"
         f"আপনার ID: <code>{message.from_user.id}</code>",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
+
+
+@router.callback_query(F.data == "adm:mindep")
+async def adm_mindep(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        return
+    current = await get_min_deposit()
+    _pending[callback.from_user.id] = "min_deposit"
+    await callback.message.edit_text(
+        f"💰 <b>মিনিমাম ডিপোজিট</b>\n\n"
+        f"বর্তমান: <b>${current:.0f}</b>\n\n"
+        f"নতুন পরিমাণ পাঠান (শুধু সংখ্যা)।\n"
+        f"উদাহরণ: <code>20</code> বা <code>50</code>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")],
+        ]),
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "adm:photo")
@@ -137,13 +159,15 @@ async def adm_stats(callback: CallbackQuery):
         posts = await session.scalar(select(func.count()).select_from(PostbackLog)) or 0
         deposits = await session.scalar(select(func.coalesce(func.sum(User.total_deposit), 0))) or 0
 
+    min_dep = await get_min_deposit()
     await callback.message.edit_text(
         f"📊 <b>স্ট্যাটস</b>\n\n"
+        f"💰 মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n"
         f"👥 মোট ইউজার: <b>{total}</b>\n"
         f"✅ ভেরিফাইড: <b>{verified}</b>\n"
         f"🎟 VIP জয়েন: <b>{joined}</b>\n"
         f"📥 Postback লগ: <b>{posts}</b>\n"
-        f"💰 মোট ডিপোজিট: <b>${float(deposits):.2f}</b>",
+        f"💵 মোট ডিপোজিট: <b>${float(deposits):.2f}</b>",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
@@ -241,10 +265,7 @@ async def adm_btns(callback: CallbackQuery):
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
         "💎 <b>বাটন টেক্সট (ভাষা অনুযায়ী)</b>\n\n"
-        "১) বাটন সিলেক্ট করুন\n"
-        "২) 🇧🇩 বা 🇬🇧 বেছে নিন\n"
-        "৩) সেই ভাষার টেক্সট পাঠান\n\n"
-        "ইউজার যে ভাষা সিলেক্ট করবে, সেই টেক্সট দেখাবে।",
+        "১) বাটন সিলেক্ট → ২) ভাষা → ৩) টেক্সট পাঠান",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -262,8 +283,7 @@ async def adm_btn_pick_lang(callback: CallbackQuery):
     await callback.message.edit_text(
         f"📝 <b>{title}</b>\n<code>{key}</code>\n\n"
         f"🇧🇩 এখন: <code>{bn}</code>\n"
-        f"🇬🇧 এখন: <code>{en}</code>\n\n"
-        f"কোন ভাষার টেক্সট সেট করবেন?",
+        f"🇬🇧 এখন: <code>{en}</code>\n\nকোন ভাষা?",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [
                 InlineKeyboardButton(text="🇧🇩 বাংলা সেট", callback_data=f"adm:set:{key}_bn", style="success"),
@@ -289,7 +309,7 @@ async def adm_styles(callback: CallbackQuery):
         )])
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
-        "🎨 <b>বাটন কালার</b>\n\n🟢 success / 🔵 primary / 🔴 danger",
+        "🎨 <b>বাটন কালার</b>",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -324,8 +344,7 @@ async def adm_style_set(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
     parts = callback.data.split(":")
-    key = parts[2]
-    style = parts[3]
+    key, style = parts[2], parts[3]
     await set_setting(f"style_{key}", style)
     await callback.answer(f"✅ {key} → {style}", show_alert=True)
     await callback.message.edit_text(
@@ -348,7 +367,7 @@ async def adm_icons(callback: CallbackQuery):
         )])
     rows.append([InlineKeyboardButton(text="⬅️ অ্যাডমিন মেনু", callback_data="adm:home", style="primary")])
     await callback.message.edit_text(
-        "✨ <b>প্রিমিয়াম কাস্টম ইমোজি</b>\n\nবাটন সিলেক্ট → কাস্টম ইমোজি পাঠান।",
+        "✨ <b>প্রিমিয়াম কাস্টম ইমোজি</b>",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
@@ -389,16 +408,11 @@ async def adm_set_key(callback: CallbackQuery):
         return
     key = callback.data.split("adm:set:", 1)[1]
     current = await get_setting(key, "")
-    lang_hint = ""
-    if key.endswith("_bn"):
-        lang_hint = "🇧🇩 বাংলা"
-    elif key.endswith("_en"):
-        lang_hint = "🇬🇧 English"
+    lang_hint = "🇧🇩 বাংলা" if key.endswith("_bn") else ("🇬🇧 English" if key.endswith("_en") else "")
     _pending[callback.from_user.id] = key
     await callback.message.edit_text(
         f"📝 সেট করুন {lang_hint}\nKey: <code>{key}</code>\n\n"
-        f"বর্তমান:\n<code>{current or 'নেই'}</code>\n\n"
-        f"নতুন টেক্সট পাঠান (ইমোজিসহ চলবে):",
+        f"বর্তমান:\n<code>{current or 'নেই'}</code>\n\nনতুন টেক্সট পাঠান:",
         parse_mode="HTML",
     )
     await callback.answer()
@@ -414,10 +428,7 @@ async def admin_photo_input(message: Message):
     photo = message.photo[-1]
     await set_setting("welcome_photo_file_id", photo.file_id)
     await set_setting("welcome_photo_url", "")
-    await message.answer(
-        "✅ ওয়েলকাম ফটো সেভ হয়েছে।\n/start দিয়ে চেক করুন।",
-        reply_markup=admin_menu_kb(),
-    )
+    await message.answer("✅ ওয়েলকাম ফটো সেভ হয়েছে।", reply_markup=admin_menu_kb())
 
 
 @router.message(AdminPendingFilter(), F.text)
@@ -426,29 +437,42 @@ async def admin_text_input(message: Message):
     key = _pending.pop(uid)
     value = (message.text or "").strip()
 
+    if key == "min_deposit":
+        try:
+            amount = float(value.replace("$", "").strip())
+            if amount < 0:
+                raise ValueError()
+        except ValueError:
+            _pending[uid] = key
+            await message.answer("❌ শুধু সংখ্যা পাঠান। উদাহরণ: 20")
+            return
+        await set_setting("min_deposit", str(amount))
+        await message.answer(
+            f"✅ মিনিমাম ডিপোজিট সেট: <b>${amount:.0f}</b>",
+            reply_markup=admin_menu_kb(),
+            parse_mode="HTML",
+        )
+        return
+
     if key == "welcome_photo":
         if value.lower() == "clear":
             await set_setting("welcome_photo_url", "")
             await set_setting("welcome_photo_file_id", "")
-            await message.answer("✅ ওয়েলকাম ফটো মুছে ফেলা হয়েছে।", reply_markup=admin_menu_kb())
+            await message.answer("✅ ফটো মুছে ফেলা হয়েছে।", reply_markup=admin_menu_kb())
             return
         if value.startswith("http://") or value.startswith("https://"):
             await set_setting("welcome_photo_url", value)
             await set_setting("welcome_photo_file_id", "")
-            await message.answer(
-                f"✅ ফটো URL সেভ:\n<code>{value}</code>",
-                reply_markup=admin_menu_kb(),
-                parse_mode="HTML",
-            )
+            await message.answer(f"✅ URL সেভ:\n<code>{value}</code>", reply_markup=admin_menu_kb(), parse_mode="HTML")
             return
         _pending[uid] = key
-        await message.answer("❌ URL বা ছবি দরকার। মুছতে: clear")
+        await message.answer("❌ URL বা ছবি দরকার।")
         return
 
     if key.startswith("icon_"):
         if value.lower() == "clear":
             await set_setting(key, "")
-            await message.answer("✅ প্রিমিয়াম ইমোজি মুছে ফেলা হয়েছে।", reply_markup=admin_menu_kb())
+            await message.answer("✅ ইমোজি মুছে ফেলা হয়েছে।", reply_markup=admin_menu_kb())
             return
         emoji_id = None
         if message.entities:
@@ -464,17 +488,12 @@ async def admin_text_input(message: Message):
                 await message.answer("❌ কাস্টম ইমোজি পাওয়া যায়নি।")
                 return
         await set_setting(key, emoji_id)
-        await message.answer(
-            f"✅ <code>{key}</code> = <code>{emoji_id}</code>",
-            reply_markup=admin_menu_kb(),
-            parse_mode="HTML",
-        )
+        await message.answer(f"✅ <code>{key}</code> = <code>{emoji_id}</code>", reply_markup=admin_menu_kb(), parse_mode="HTML")
         return
 
     await set_setting(key, value)
     await message.answer(
-        f"✅ সেভ\n<code>{key}</code> =\n{value}\n\n"
-        f"ইউজার ওই ভাষা সিলেক্ট করলে এই টেক্সট দেখাবে।",
+        f"✅ সেভ\n<code>{key}</code> =\n{value}",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
