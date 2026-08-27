@@ -42,7 +42,6 @@ async def _send_welcome(
     reply_markup=None,
 ):
     bot_name = await get_bot_display_name(bot)
-    # সবার জন্য একই স্ট্যাটিক affiliate লিংক
     register_url = await get_affiliate_url()
     text = get_text(
         lang,
@@ -132,7 +131,7 @@ async def set_language(callback: CallbackQuery, bot: Bot):
         await callback.message.answer(get_text(lang, "language_set"))
     await _send_welcome(
         callback.message,
-        lang trans,
+        lang,
         callback.from_user.id,
         bot,
         reply_markup=await main_menu(lang),
@@ -149,7 +148,6 @@ async def receive_trader_id(message: Message, bot: Bot):
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
     min_dep = await get_min_deposit()
-    # সবার একই register লিংক
     register_url = await get_affiliate_url()
 
     async with async_session() as session:
@@ -164,7 +162,6 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
-        # শুধু trader_id দিয়ে postback ম্যাচ (click_id নয় — লিংক সবার সেম)
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
                 PostbackLog.trader_id == trader_id
@@ -196,7 +193,6 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         await session.commit()
 
-        # আমাদের লিংক দিয়ে অ্যাকাউন্ট না খুললে postback নেই → verify নয়
         if pb_count == 0 and not user.is_verified:
             await message.answer(
                 get_text(lang, "not_from_our_link", trader_id=trader_id),
