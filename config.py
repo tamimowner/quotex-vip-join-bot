@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     ADMIN_IDS: str = ""
     VIP_GROUP_ID: int = 0
 
+    # Static VIP group invite link (same for everyone — PHP style)
+    VIP_GROUP_LINK: str = ""
+
     AFFILIATE_LINK_BASE: str = (
         "https://broker-qx.pro/sign-up/?lid=1480996&click_id={click_id}&site_id={site_id}"
     )
@@ -54,5 +57,5 @@ try:
 except Exception as e:
     print("ERROR: Missing or invalid environment variables:", e)
     print("Required: BOT_TOKEN, DATABASE_URL")
-    print("Recommended: VIP_GROUP_ID, ADMIN_IDS, AFFILIATE_LINK_BASE")
+    print("Recommended: VIP_GROUP_LINK, VIP_GROUP_ID, ADMIN_IDS, AFFILIATE_LINK_BASE")
     raise
