@@ -14,13 +14,19 @@ from services.invite import create_unique_invite
 
 router = Router()
 
-BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
+BOT_DISPLAY_NAME = "SKV VIP"
 # Quotex Trader IDs are usually 8 digits; allow 6-12 to be safe
 TRADER_ID_RE = re.compile(r"^[0-9]{6,12}$")
 
 
-async def _send_welcome(target: Message, lang: str, reply_markup=None):
-    text = get_text(lang, "welcome", botName=BOT_DISPLAY_NAME)
+async def _send_welcome(target: Message, lang: str, telegram_id: int, reply_markup=None):
+    register_url = await get_affiliate_url(str(telegram_id))
+    text = get_text(
+        lang,
+        "welcome",
+        botName=BOT_DISPLAY_NAME,
+        register_url=register_url,
+    )
     file_id = await get_setting("welcome_photo_file_id", "")
     photo_url = await get_setting("welcome_photo_url", "")
 
@@ -48,6 +54,7 @@ async def _send_welcome(target: Message, lang: str, reply_markup=None):
         text,
         reply_markup=reply_markup,
         parse_mode="HTML",
+        disable_web_page_preview=True,
     )
 
 
@@ -75,7 +82,12 @@ async def cmd_start(message: Message):
             return
 
         lang = user.language or "bn"
-        await _send_welcome(message, lang, reply_markup=await main_menu(lang))
+        await _send_welcome(
+            message,
+            lang,
+            message.from_user.id,
+            reply_markup=await main_menu(lang),
+        )
 
 
 @router.callback_query(F.data.startswith("lang:"))
@@ -97,6 +109,7 @@ async def set_language(callback: CallbackQuery):
     await _send_welcome(
         callback.message,
         lang,
+        callback.from_user.id,
         reply_markup=await main_menu(lang),
     )
     await callback.answer()
@@ -126,7 +139,6 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
-        # Count postbacks for this trader_id OR this Telegram click_id
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
                 or_(
@@ -136,7 +148,6 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
         ) or 0
 
-        # Sum deposits linked to this trader_id
         dep_sum = float(
             await session.scalar(
                 select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
@@ -153,7 +164,6 @@ async def receive_trader_id(message: Message, bot: Bot):
         )
         total = max(dep_sum, dep_by_click, float(user.total_deposit or 0))
 
-        # Country from latest log
         log_result = await session.execute(
             select(PostbackLog)
             .where(
@@ -177,7 +187,6 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         register_url = await get_affiliate_url(str(tg_id))
 
-        # No postback at all → not from our link
         if pb_count == 0 and not user.is_verified:
             await message.answer(
                 get_text(lang, "not_from_our_link", trader_id=trader_id),
@@ -186,7 +195,6 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
-        # Has postback but deposit still below minimum
         if total < min_dep and not user.is_verified:
             await message.answer(
                 get_text(
@@ -202,20 +210,16 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
-        # Verify
         if not user.is_verified:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
             await session.commit()
 
-        # Static VIP link (same for everyone)
         vip_link = await get_vip_group_link()
         if not vip_link:
-            # fallback to create_unique_invite which now returns static link
             vip_link = await create_unique_invite(bot, tg_id)
 
         if vip_link:
-            # store on user
             user.invite_link = vip_link
             await session.commit()
 
@@ -245,7 +249,6 @@ async def fallback_text(message: Message):
         user = result.scalar_one_or_none()
         lang = (user.language if user else None) or "bn"
 
-    # Looks like they tried to send an ID but wrong format
     if any(ch.isdigit() for ch in text) or len(text) <= 20:
         if not TRADER_ID_RE.match(text):
             await message.answer(
