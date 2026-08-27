@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard
@@ -105,9 +105,11 @@ async def set_language(callback: CallbackQuery):
 @router.message(F.text.regexp(r"^[0-9]{8}$"))
 async def receive_trader_id(message: Message, bot: Bot):
     trader_id = (message.text or "").strip()
+    tg_id = message.from_user.id
+
     async with async_session() as session:
         result = await session.execute(
-            select(User).where(User.telegram_id == message.from_user.id)
+            select(User).where(User.telegram_id == tg_id)
         )
         user = result.scalar_one_or_none()
         if not user:
@@ -117,29 +119,40 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
-        # Sum deposits from postback logs for this trader_id
-        dep_sum = await session.scalar(
-            select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
-                PostbackLog.trader_id == trader_id
+        # Any postback under OUR partner system for this trader / click?
+        # Postback only arrives if account was created via our affiliate link.
+        pb_count = await session.scalar(
+            select(func.count()).select_from(PostbackLog).where(
+                or_(
+                    PostbackLog.trader_id == trader_id,
+                    PostbackLog.click_id == str(tg_id),
+                )
             )
-        )
-        dep_sum = float(dep_sum or 0)
+        ) or 0
 
-        # Also check click_id = telegram_id logs
-        dep_by_click = await session.scalar(
-            select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
-                PostbackLog.click_id == str(message.from_user.id)
-            )
+        dep_sum = float(
+            await session.scalar(
+                select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
+                    PostbackLog.trader_id == trader_id
+                )
+            ) or 0
         )
-        dep_by_click = float(dep_by_click or 0)
+        dep_by_click = float(
+            await session.scalar(
+                select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
+                    PostbackLog.click_id == str(tg_id)
+                )
+            ) or 0
+        )
         total = max(dep_sum, dep_by_click, float(user.total_deposit or 0))
 
-        # Latest country from postback
         log_result = await session.execute(
             select(PostbackLog)
             .where(
-                (PostbackLog.trader_id == trader_id)
-                | (PostbackLog.click_id == str(message.from_user.id))
+                or_(
+                    PostbackLog.trader_id == trader_id,
+                    PostbackLog.click_id == str(tg_id),
+                )
             )
             .order_by(PostbackLog.id.desc())
             .limit(1)
@@ -152,42 +165,60 @@ async def receive_trader_id(message: Message, bot: Bot):
             user.total_deposit = total
             user.last_deposit = total
 
-        already = user.is_verified
-        if total >= MIN_DEPOSIT and not user.is_verified:
-            user.is_verified = True
-            user.verified_at = datetime.utcnow()
-
         await session.commit()
 
-        if user.is_verified and not user.has_joined:
-            invite_link = user.invite_link
-            if not invite_link:
-                invite_link = await create_unique_invite(bot, message.from_user.id)
-            if invite_link:
-                await message.answer(
-                    get_text(lang, "invite_ready", link=invite_link),
-                    parse_mode="HTML",
-                    disable_web_page_preview=True,
-                    reply_markup=await main_menu(lang),
-                )
-                return
+        register_url = await get_affiliate_url(str(tg_id))
 
-        if already or user.is_verified:
+        # 1) No postback at all → NOT our affiliate link
+        if pb_count == 0 and not user.is_verified:
+            await session.commit()
             await message.answer(
-                get_text(lang, "already_verified"),
+                get_text(lang, "not_from_our_link", trader_id=trader_id),
+                parse_mode="HTML",
+                reply_markup=await premium_keyboard(lang, register_url),
+            )
+            return
+
+        # 2) Our link found, but deposit not enough yet
+        if total < MIN_DEPOSIT and not user.is_verified:
+            await message.answer(
+                get_text(lang, "trader_id_saved", trader_id=trader_id)
+                + "\n\n"
+                + get_text(lang, "need_deposit_hint", min_deposit=int(MIN_DEPOSIT)),
+                parse_mode="HTML",
+                reply_markup=await premium_keyboard(lang, register_url),
+            )
+            return
+
+        # 3) Our link + enough deposit → verify + VIP invite
+        if not user.is_verified:
+            user.is_verified = True
+            user.verified_at = datetime.utcnow()
+            await session.commit()
+
+        if user.has_joined:
+            await message.answer(
+                get_text(lang, "already_joined"),
                 reply_markup=await main_menu(lang),
             )
             return
 
-        # Not verified yet — show register link
-        register_url = await get_affiliate_url(str(message.from_user.id))
-        await message.answer(
-            get_text(lang, "trader_id_saved", trader_id=trader_id)
-            + "\n\n"
-            + get_text(lang, "need_deposit_hint", min_deposit=int(MIN_DEPOSIT)),
-            parse_mode="HTML",
-            reply_markup=await premium_keyboard(lang, register_url),
-        )
+        invite_link = user.invite_link
+        if not invite_link:
+            invite_link = await create_unique_invite(bot, tg_id)
+
+        if invite_link:
+            await message.answer(
+                get_text(lang, "invite_ready", link=invite_link),
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+                reply_markup=await main_menu(lang),
+            )
+        else:
+            await message.answer(
+                get_text(lang, "already_verified"),
+                reply_markup=await main_menu(lang),
+            )
 
 
 @router.message(F.text)
