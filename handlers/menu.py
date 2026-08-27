@@ -21,7 +21,7 @@ from services.settings_store import (
 
 router = Router()
 
-BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
+BOT_DISPLAY_NAME = "SKV VIP"
 
 
 async def get_user(telegram_id: int) -> User | None:
@@ -53,7 +53,13 @@ async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
 async def menu_back(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    text = get_text(lang, "welcome", botName=BOT_DISPLAY_NAME)
+    register_url = await get_affiliate_url(str(callback.from_user.id))
+    text = get_text(
+        lang,
+        "welcome",
+        botName=BOT_DISPLAY_NAME,
+        register_url=register_url,
+    )
     await _safe_edit(callback, text, reply_markup=await main_menu(lang))
     await callback.answer()
 
@@ -64,7 +70,7 @@ async def menu_settings(callback: CallbackQuery):
     lang = user.language if user else "bn"
     await _safe_edit(
         callback,
-        get_text(lang, "settings_title"),
+        get_text(lang, "settings_settings_title"),
         reply_markup=await settings_keyboard(lang),
     )
     await callback.answer()
@@ -87,7 +93,6 @@ async def menu_premium(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
 
-    # Already verified → show static VIP link
     if user and user.is_verified:
         vip_link = await get_vip_group_link() or user.invite_link
         if vip_link:
