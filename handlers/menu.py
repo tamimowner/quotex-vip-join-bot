@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
-from sqlalchemy import select
-from database.models import User
+from sqlalchemy import select, or_
+from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import (
     main_menu,
@@ -11,7 +11,7 @@ from keyboards import (
     settings_language_keyboard,
 )
 from locales import get_text
-from services.settings_store import get_affiliate_url, get_setting, get_support_text
+from services.settings_store import get_affiliate_url, get_setting, get_support_text, get_min_deposit
 
 router = Router()
 
@@ -112,23 +112,58 @@ async def menu_premium(callback: CallbackQuery):
 async def menu_status(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
+    min_dep = await get_min_deposit()
 
-    if not user or not user.is_verified:
-        text = get_text(lang, "status_title") + get_text(lang, "status_not_verified")
-    else:
-        joined = "Yes ✅" if user.has_joined else "No ❌"
-        verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
-        text = get_text(lang, "status_title") + get_text(
-            lang,
-            "status_verified",
-            trader_id=user.trader_id or "-",
-            country=user.country or "-",
-            total_deposit=user.total_deposit or 0,
-            total_withdraw=user.total_withdraw or 0,
-            last_deposit=user.last_deposit or 0,
-            verified_at=verified_at,
-            joined=joined,
+    if not user:
+        await _safe_edit(
+            callback,
+            get_text(lang, "status_title") + get_text(lang, "status_not_verified"),
+            reply_markup=await back_keyboard(lang),
         )
+        await callback.answer()
+        return
+
+    joined = "Yes ✅" if user.has_joined else "No ❌"
+    verified = "Yes ✅" if user.is_verified else "No ❌"
+    verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
+
+    text = get_text(lang, "status_title")
+    text += get_text(
+        lang,
+        "status_full",
+        trader_id=user.trader_id or "-",
+        country=user.country or "-",
+        total_deposit=user.total_deposit or 0,
+        total_withdraw=user.total_withdraw or 0,
+        last_deposit=user.last_deposit or 0,
+        min_deposit=int(min_dep),
+        verified=verified,
+        verified_at=verified_at,
+        joined=joined,
+    )
+
+    # History from postback logs
+    async with async_session() as session:
+        q = select(PostbackLog).where(
+            or_(
+                PostbackLog.trader_id == (user.trader_id or ""),
+                PostbackLog.click_id == str(callback.from_user.id),
+            )
+        ).order_by(PostbackLog.id.desc()).limit(8)
+        result = await session.execute(q)
+        logs = result.scalars().all()
+
+    if logs:
+        text += "\n\n" + get_text(lang, "history_title") + "\n"
+        for log in logs:
+            when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
+            text += (
+                f"• {when} | status=<code>{log.status or '-'}</code> "
+                f"dep=${log.sumdep or 0:.2f} "
+                f"uid=<code>{log.trader_id or '-'}</code>\n"
+            )
+    else:
+        text += "\n\n" + get_text(lang, "history_empty")
 
     await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
