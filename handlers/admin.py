@@ -7,6 +7,7 @@ from config import settings
 from database.db import async_session
 from database.models import User, PostbackLog
 from services.settings_store import get_setting, set_setting, get_button_text, get_min_deposit
+import os
 
 router = Router()
 
@@ -35,17 +36,48 @@ def is_admin(user_id: int) -> bool:
     return user_id in settings.admin_ids
 
 
-class AdminPendingFilter(BaseFilter):
-    async def __call__(self, message: Message) -> bool:
-        return bool(
-            message.from_user
-            and message.from_user.id in _pending
-            and is_admin(message.from_user.id)
-        )
+def _admin_web_token() -> str:
+    return (
+        os.getenv("ADMIN_WEB_TOKEN", "")
+        or os.getenv("POSTBACK_SECRET", "")
+        or "changeme"
+    )
+
+
+def _web_admin_base_url() -> str:
+    """Public base URL of the deployed app (no trailing slash)."""
+    for key in (
+        "WEB_BASE_URL",
+        "ADMIN_WEB_URL",
+        "PUBLIC_URL",
+        "RAILWAY_PUBLIC_DOMAIN",
+    ):
+        val = (os.getenv(key) or "").strip().rstrip("/")
+        if val:
+            if key == "RAILWAY_PUBLIC_DOMAIN" and not val.startswith("http"):
+                return f"https://{val}"
+            return val
+    return ""
+
+
+def admin_choose_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="🌐 Web Panel (সব ডেটা + সেটিংস)",
+            callback_data="adm:choose:web",
+            style="success",
+        )],
+        [InlineKeyboardButton(
+            text="⌨️ Command Panel (টেলিগ্রামে)",
+            callback_data="adm:choose:cmd",
+            style="primary",
+        )],
+    ])
 
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Web Panel খুলুন", callback_data="adm:choose:web", style="success")],
         [InlineKeyboardButton(text="💰 মিনিমাম ডিপোজিট", callback_data="adm:mindep", style="success")],
         [InlineKeyboardButton(text="🖼 ওয়েলকাম ফটো (URL/আপলোড)", callback_data="adm:photo", style="success")],
         [InlineKeyboardButton(text="🔗 কোটেক্স পার্টনার লিংক", callback_data="adm:link", style="primary")],
@@ -57,25 +89,119 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="👥 ইউজার লিস্ট", callback_data="adm:users", style="primary")],
         [InlineKeyboardButton(text="📢 পাবলিক চ্যানেল", callback_data="adm:public", style="primary")],
         [InlineKeyboardButton(text="🆘 সাপোর্ট টেক্সট (BN/EN)", callback_data="adm:support", style="primary")],
+        [InlineKeyboardButton(text="◀️ প্যানেল বেছে নিন", callback_data="adm:choose", style="primary")],
     ])
+
+
+class AdminPendingFilter(BaseFilter):
+    async def __call__(self, message: Message) -> bool:
+        return bool(
+            message.from_user
+            and message.from_user.id in _pending
+            and is_admin(message.from_user.id)
+        )
 
 
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
     if not is_admin(message.from_user.id):
-        await message.answer("⛔ শুধু অ্যাডমিন ব্যবহার করতে পারবে।")
+        await message.answer("⛔ শুধু অ্যাডমিন (ADMIN_IDS) ব্যবহার করতে পারবে।")
         return
     min_dep = await get_min_deposit()
     await message.answer(
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
-        f"💰 বর্তমান মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n\n"
-        "• মিনিমাম ডিপোজিট সেট\n"
-        "• বাটন টেক্সট BN + EN\n"
-        "• ওয়েলকাম ফটো, কালার, প্রিমিয়াম ইমোজি\n\n"
-        f"আপনার ID: <code>{message.from_user.id}</code>",
+        f"💰 মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n"
+        f"🆔 আপনার ID: <code>{message.from_user.id}</code>\n\n"
+        "কোন প্যানেল খুলবেন?\n\n"
+        "🌐 <b>Web Panel</b> — ব্রাউজারে পুরো কন্ট্রোল\n"
+        "   (লিংক, বাটন, মেসেজ HTML, AI, ইউজার/স্ট্যাটস)\n\n"
+        "⌨️ <b>Command Panel</b> — টেলিগ্রামেই কমান্ড মেনু",
+        reply_markup=admin_choose_kb(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data == "adm:choose")
+async def adm_choose_again(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Forbidden", show_alert=True)
+        return
+    await callback.message.edit_text(
+        "🛠 <b>অ্যাডমিন প্যানেল</b>\n\nকোন প্যানেল খুলবেন?",
+        reply_markup=admin_choose_kb(),
+        parse_mode="HTML",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "adm:choose:web")
+async def adm_choose_web(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Forbidden", show_alert=True)
+        return
+
+    base = _web_admin_base_url()
+    token = _admin_web_token()
+
+    if base:
+        url = f"{base}/admin?token={token}"
+        text = (
+            "🌐 <b>Web Admin Panel</b>\n\n"
+            "শুধু অ্যাডমিনদের জন্য। এখানে আছে:\n"
+            "• Affiliate / VIP লিংক, মিনিমাম ডিপোজিট\n"
+            "• বাটন টেক্সট (BN/EN) + custom emoji id\n"
+            "• মেসেজ HTML + premium tg-emoji\n"
+            "• AI ক্যাপশন\n"
+            "• ইউজার ও স্ট্যাটস\n\n"
+            f"🔗 <a href=\"{url}\">Web Panel খুলুন</a>\n\n"
+            f"অথবা কপি করুন:\n<code>{url}</code>\n\n"
+            "⚠️ লিংক শেয়ার করবেন না — টোকেন গোপন রাখুন।"
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 Open Web Panel", url=url, style="success")],
+            [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
+            [InlineKeyboardButton(text="◀️ ফিরে", callback_data="adm:choose", style="primary")],
+        ])
+    else:
+        text = (
+            "🌐 <b>Web Admin Panel</b>\n\n"
+            "⚠️ <code>WEB_BASE_URL</code> (বা <code>RAILWAY_PUBLIC_DOMAIN</code>) সেট করা নেই।\n\n"
+            "Railway Variables এ যোগ করুন:\n"
+            "• <code>WEB_BASE_URL</code> = https://your-app.up.railway.app\n"
+            "• <code>ADMIN_WEB_TOKEN</code> = একটি গোপন টোকেন\n\n"
+            f"তারপর ম্যানুয়ালি খুলুন:\n"
+            f"<code>https://YOUR-APP.up.railway.app/admin</code>\n\n"
+            f"টোকেন (হেডার/ইনপুট):\n<code>{token}</code>"
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
+            [InlineKeyboardButton(text="◀️ ফিরে", callback_data="adm:choose", style="primary")],
+        ])
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=kb,
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "adm:choose:cmd")
+async def adm_choose_cmd(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Forbidden", show_alert=True)
+        return
+    min_dep = await get_min_deposit()
+    await callback.message.edit_text(
+        "⌨️ <b>Command Panel</b>\n\n"
+        f"💰 মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n"
+        f"🆔 <code>{callback.from_user.id}</code>\n\n"
+        "নিচের মেনু থেকে সেটিংস পরিবর্তন করুন।",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "adm:mindep")
@@ -179,7 +305,8 @@ async def adm_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
     async with async_session() as session:
-        result = await session.execute(select(User).order_by(User.id.desc()).limit(10))
+        result = await session.execute(select(User).order_by(User.id.desc()).limit(10)
+        )
         users = result.scalars().all()
     lines = []
     for u in users:
@@ -395,7 +522,7 @@ async def adm_home(callback: CallbackQuery):
         return
     _pending.pop(callback.from_user.id, None)
     await callback.message.edit_text(
-        "🛠 <b>অ্যাডমিন প্যানেল</b>",
+        "⌨️ <b>Command Panel</b>",
         reply_markup=admin_menu_kb(),
         parse_mode="HTML",
     )
