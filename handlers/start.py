@@ -9,13 +9,14 @@ from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard
 from locales import get_text
 from config import settings
-from services.settings_store import get_setting, get_affiliate_url, get_min_deposit
+from services.settings_store import get_setting, get_affiliate_url, get_min_deposit, get_vip_group_link
 from services.invite import create_unique_invite
 
 router = Router()
 
 BOT_DISPLAY_NAME = "RT VIP JOIN BOT"
-TRADER_ID_RE = re.compile(r"^[0-9]{8}$")
+# Quotex Trader IDs are usually 8 digits; allow 6-12 to be safe
+TRADER_ID_RE = re.compile(r"^[0-9]{6,12}$")
 
 
 async def _send_welcome(target: Message, lang: str, reply_markup=None):
@@ -101,8 +102,14 @@ async def set_language(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(F.text.regexp(r"^[0-9]{8}$"))
+@router.message(F.text.regexp(r"^[0-9]{6,12}$"))
 async def receive_trader_id(message: Message, bot: Bot):
+    """
+    PHP-style flow:
+    1. User sends Trader ID manually
+    2. We look up postback_logs for that trader_id
+    3. If found (+ deposit ok) → verify → give STATIC VIP link
+    """
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
     min_dep = await get_min_deposit()
@@ -119,7 +126,7 @@ async def receive_trader_id(message: Message, bot: Bot):
         lang = user.language or "bn"
         user.trader_id = trader_id
 
-        # Postback only exists if account came through OUR partner link
+        # Count postbacks for this trader_id OR this Telegram click_id
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
                 or_(
@@ -129,6 +136,7 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
         ) or 0
 
+        # Sum deposits linked to this trader_id
         dep_sum = float(
             await session.scalar(
                 select(func.coalesce(func.sum(PostbackLog.sumdep), 0.0)).where(
@@ -145,6 +153,7 @@ async def receive_trader_id(message: Message, bot: Bot):
         )
         total = max(dep_sum, dep_by_click, float(user.total_deposit or 0))
 
+        # Country from latest log
         log_result = await session.execute(
             select(PostbackLog)
             .where(
@@ -168,6 +177,7 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         register_url = await get_affiliate_url(str(tg_id))
 
+        # No postback at all → not from our link
         if pb_count == 0 and not user.is_verified:
             await message.answer(
                 get_text(lang, "not_from_our_link", trader_id=trader_id),
@@ -176,9 +186,15 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
+        # Has postback but deposit still below minimum
         if total < min_dep and not user.is_verified:
             await message.answer(
-                get_text(lang, "account_created_success", trader_id=trader_id, min_deposit=int(min_dep))
+                get_text(
+                    lang,
+                    "account_created_success",
+                    trader_id=trader_id,
+                    min_deposit=int(min_dep),
+                )
                 + "\n\n"
                 + get_text(lang, "need_deposit_hint", min_deposit=int(min_dep)),
                 parse_mode="HTML",
@@ -186,25 +202,25 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
+        # Verify
         if not user.is_verified:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
             await session.commit()
 
-        if user.has_joined:
-            await message.answer(
-                get_text(lang, "already_joined"),
-                reply_markup=await main_menu(lang),
-            )
-            return
+        # Static VIP link (same for everyone)
+        vip_link = await get_vip_group_link()
+        if not vip_link:
+            # fallback to create_unique_invite which now returns static link
+            vip_link = await create_unique_invite(bot, tg_id)
 
-        invite_link = user.invite_link
-        if not invite_link:
-            invite_link = await create_unique_invite(bot, tg_id)
+        if vip_link:
+            # store on user
+            user.invite_link = vip_link
+            await session.commit()
 
-        if invite_link:
             await message.answer(
-                get_text(lang, "invite_ready", link=invite_link),
+                get_text(lang, "invite_ready", link=vip_link),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
                 reply_markup=await main_menu(lang),
@@ -229,6 +245,7 @@ async def fallback_text(message: Message):
         user = result.scalar_one_or_none()
         lang = (user.language if user else None) or "bn"
 
+    # Looks like they tried to send an ID but wrong format
     if any(ch.isdigit() for ch in text) or len(text) <= 20:
         if not TRADER_ID_RE.match(text):
             await message.answer(
