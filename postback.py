@@ -5,6 +5,7 @@ from sqlalchemy import select
 from database.models import User, PostbackLog
 from database.db import async_session
 from services.invite import create_unique_invite
+from services.settings_store import get_min_deposit
 from locales import get_text
 from config import settings
 from aiogram import Bot
@@ -12,8 +13,6 @@ import json
 
 app = FastAPI(title="Quotex Postback Receiver")
 bot = Bot(token=settings.BOT_TOKEN)
-
-MIN_DEPOSIT = 20.0
 
 
 @app.get("/")
@@ -44,6 +43,8 @@ async def postback(request: Request):
 
     print(f"POSTBACK: status={status} cid={click_id} uid={trader_id} sumdep={sumdep}")
 
+    min_dep = await get_min_deposit()
+
     async with async_session() as session:
         log = PostbackLog(
             click_id=str(click_id) if click_id else None,
@@ -58,7 +59,6 @@ async def postback(request: Request):
         session.add(log)
         await session.commit()
 
-        # Find user by click_id (telegram id) OR by trader_id already saved
         user = None
         if click_id:
             try:
@@ -77,14 +77,18 @@ async def postback(request: Request):
             user = result.scalar_one_or_none()
 
         if not user:
+            # Still saved in postback_logs — user can match later by trader_id
             return PlainTextResponse("OK", status_code=200)
+
+        had_trader = bool(user.trader_id)
+        prev_deposit = float(user.total_deposit or 0)
 
         if trader_id:
             user.trader_id = str(trader_id)
         if country:
             user.country = str(country)
         if sumdep > 0:
-            user.total_deposit = (user.total_deposit or 0) + sumdep
+            user.total_deposit = prev_deposit + sumdep
             user.last_deposit = sumdep
         if sumwithdraw > 0:
             user.total_withdraw = (user.total_withdraw or 0) + sumwithdraw
@@ -92,17 +96,48 @@ async def postback(request: Request):
             user.last_event_id = str(event_id)
 
         just_verified = False
-        if not user.is_verified and (user.total_deposit or 0) >= MIN_DEPOSIT:
+        if not user.is_verified and (user.total_deposit or 0) >= min_dep:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
             just_verified = True
 
         await session.commit()
 
+        lang = user.language or "bn"
+
+        # Account created via our link (registration / first signal) but deposit not enough yet
+        if not just_verified and not user.is_verified:
+            # Notify once-ish: new trader_id linked or deposit still below min
+            try:
+                if trader_id and (not had_trader or sumdep == 0):
+                    await bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=get_text(
+                            lang,
+                            "account_created_success",
+                            trader_id=str(trader_id),
+                            min_deposit=int(min_dep),
+                        ),
+                        parse_mode="HTML",
+                    )
+                elif sumdep > 0 and (user.total_deposit or 0) < min_dep:
+                    await bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=get_text(
+                            lang,
+                            "deposit_received_need_more",
+                            amount=sumdep,
+                            total=user.total_deposit or 0,
+                            min_deposit=int(min_dep),
+                        ),
+                        parse_mode="HTML",
+                    )
+            except Exception as e:
+                print(f"Notify failed: {e}")
+
         if just_verified and not user.has_joined:
             invite_link = await create_unique_invite(bot, user.telegram_id)
             if invite_link:
-                lang = user.language or "bn"
                 try:
                     await bot.send_message(
                         chat_id=user.telegram_id,
