@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VIP Bot Admin</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1a2332;
+    --border: #2d3a4f;
+    --text: #e7ecf3;
+    --muted: #8b9bb4;
+    --accent: #3b82f6;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+    background: #121a24;
+  }
+  header h1 { margin: 0; font-size: 1.15rem; }
+  .token-row { display: flex; gap: 8px; align-items: center; }
+  input, select, textarea, button {
+    font: inherit; border-radius: 8px; border: 1px solid var(--border);
+    background: #0d1218; color: var(--text); padding: 8px 12px;
+  }
+  button {
+    cursor: pointer; background: var(--accent); border-color: transparent; font-weight: 600;
+  }
+  button.secondary { background: #243044; }
+  button.ok { background: var(--ok); color: #052e16; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  nav {
+    display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav button.tab { background: transparent; border: 1px solid var(--border); }
+  nav button.tab.active { background: var(--accent); }
+  main { padding: 16px 20px 40px; max-width: 1100px; margin: 0 auto; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1rem; }
+  .grid { display: grid; gap: 12px; }
+  .grid.2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  .field { margin-bottom: 10px; }
+  textarea { width: 100%; min-height: 140px; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+  .preview {
+    background: #0b0f14; border: 1px dashed var(--border); border-radius: 10px;
+    padding: 14px; min-height: 100px; white-space: pre-wrap; line-height: 1.45;
+  }
+  .preview b { font-weight: 700; }
+  .muted { color: var(--muted); font-size: 0.85rem; }
+  .stat { font-size: 1.4rem; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
+  .badge.ok { background: #14532d; color: #86efac; }
+  .badge.no { background: #44403c; color: #d6d3d1; }
+  .toast {
+    position: fixed; bottom: 16px; right: 16px; background: #14532d; color: #fff;
+    padding: 10px 16px; border-radius: 8px; display: none; z-index: 99;
+  }
+  .hidden { display: none !important; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠 VIP Bot — Web Admin</h1>
+  <div class="token-row">
+    <input id="token" type="password" placeholder="ADMIN_WEB_TOKEN" style="min-width:180px" />
+    <button id="btnSaveToken" class="secondary" type="button">Save token</button>
+    <button id="btnLoad" type="button">Load</button>
+  </div>
+</header>
+<nav>
+  <button type="button" class="tab active" data-tab="links">Links & Deposit</button>
+  <button type="button" class="tab" data-tab="buttons">Buttons</button>
+  <button type="button" class="tab" data-tab="messages">Messages (HTML)</button>
+  <button type="button" class="tab" data-tab="ai">AI Caption</button>
+  <button type="button" class="tab" data-tab="stats">Users & Stats</button>
+</nav>
+<main>
+  <section id="tab-links" class="panel">
+    <div class="card grid 2">
+      <div class="field">
+        <label>Affiliate / Quotex register link</label>
+        <input id="affiliate_link_base" style="width:100%" />
+      </div>
+      <div class="field">
+        <label>VIP group static invite link</label>
+        <input id="vip_group_link" style="width:100%" />
+      </div>
+      <div class="field">
+        <label>Min deposit ($)</label>
+        <input id="min_deposit" type="number" min="0" step="1" />
+      </div>
+      <div class="field">
+        <label>Public channel</label>
+        <input id="public_channel" style="width:100%" />
+      </div>
+      <div class="field">
+        <label>Site ID</label>
+        <input id="site_id" />
+      </div>
+      <div class="field">
+        <label>Welcome photo URL</label>
+        <input id="welcome_photo_url" style="width:100%" />
+      </div>
+    </div>
+    <p class="muted" id="affiliate_preview"></p>
+    <button type="button" class="ok" id="btnSaveLinks">Save links</button>
+  </section>
+
+  <section id="tab-buttons" class="panel hidden">
+    <div class="card" id="buttonsBox"></div>
+    <button type="button" class="ok" id="btnSaveButtons">Save buttons</button>
+  </section>
+
+  <section id="tab-messages" class="panel hidden">
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <div class="field" style="flex:1;min-width:160px">
+          <label>Message key</label>
+          <select id="msgKey"></select>
+        </div>
+        <div class="field">
+          <label>Language</label>
+          <select id="msgLang"><option value="bn">বাংলা</option><option value="en">English</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>HTML (supports <b>, <code>, <tg-emoji emoji-id="…">👋</tg-emoji>)</label>
+        <textarea id="msgValue"></textarea>
+      </div>
+      <div class="field">
+        <label>Live preview (tg-emoji shows fallback emoji here)</label>
+        <div class="preview" id="msgPreview"></div>
+      </div>
+      <p class="muted" id="msgSource"></p>
+      <div class="row">
+        <button type="button" class="ok" id="btnSaveMsg">Save message</button>
+        <button type="button" class="secondary" id="btnInsertEmoji">Insert sample tg-emoji</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-ai" class="panel hidden">
+    <div class="card grid 2">
+      <div class="field">
+        <label>Topic / bot name</label>
+        <input id="aiTopic" value="VIP Join" />
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="aiLang"><option value="bn">বাংলা</option><option value="en">English</option></select>
+      </div>
+      <div class="field">
+        <label>Tone</label>
+        <select id="aiTone">
+          <option value="friendly">Friendly</option>
+          <option value="pro">Professional</option>
+          <option value="hype">Hype</option>
+        </select>
+      </div>
+      <div class="field">
+        <label><input type="checkbox" id="aiPrem" checked /> Premium tg-emoji</label>
+      </div>
+    </div>
+    <button type="button" id="btnAiGen">Generate caption</button>
+    <div class="card" style="margin-top:12px">
+      <label>Result HTML</label>
+      <textarea id="aiOut"></textarea>
+      <div class="preview" id="aiPreview" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px">
+        <button type="button" class="secondary" id="btnAiToWelcome">Copy → welcome message editor</button>
+      </div>
+      <p class="muted">Optional: set env <code>OPENAI_API_KEY</code> for real AI. Without it, smart templates are used.</p>
+    </div>
+  </section>
+
+  <section id="tab-stats" class="panel hidden">
+    <div class="card grid 2" id="statsBox"></div>
+    <div class="card">
+      <h2>Recent users</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>TG ID</th><th>Name</th><th>Trader</th><th>Dep</th><th>Verified</th><th>Joined</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const BUTTON_KEYS = [
+  "btn_premium","btn_create_account","btn_delete_account","btn_public",
+  "btn_status","btn_support","btn_register","btn_back","btn_settings"
+];
+let messagesCache = {};
+let messageKeys = [];
+
+function token() {
+  return localStorage.getItem("admin_token") || $("token").value.trim();
+}
+function setToken(t) {
+  localStorage.setItem("admin_token", t);
+  $("token").value = t;
+}
+async function api(path, opts = {}) {
+  const t = token();
+  const headers = Object.assign({ "Content-Type": "application/json", "X-Admin-Token": t }, opts.headers || {});
+  const res = await fetch("/admin" + path, { ...opts, headers });
+  if (res.status === 401) throw new Error("Unauthorized — check ADMIN_WEB_TOKEN");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || res.statusText);
+  return data;
+}
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.style.display = "block";
+  setTimeout(() => (el.style.display = "none"), 2200);
+}
+function renderTgHtml(html) {
+  // Browser preview: show fallback inside tg-emoji tags
+  let s = (html || "")
+    .replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
+  s = s.replace(/<tg-emoji[^&]*>([^&]*)<\/tg-emoji>/g, "<span style=\"font-size:1.2em\">$1</span>");
+  s = s.replace(/<b>/g, "<b>").replace(/<\/b>/g, "</b>");
+  s = s.replace(/<i>/g, "<i>").replace(/<\/i>/g, "</i>");
+  s = s.replace(/<code>/g, "<code>").replace(/<\/code>/g, "</code>");
+  s = s.replace(/\n/g, "<br>");
+  return s;
+}
+
+// Tabs
+document.querySelectorAll("nav .tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav .tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".panel").forEach((p) => p.classList.add("hidden"));
+    $("tab-" + btn.dataset.tab).classList.remove("hidden");
+  });
+});
+
+$("btnSaveToken").onclick = () => {
+  setToken($("token").value.trim());
+  toast("Token saved in browser");
+};
+
+function fillLinks(data) {
+  $("affiliate_link_base").value = data.affiliate_link_base || "";
+  $("vip_group_link").value = data.vip_group_link || "";
+  $("min_deposit").value = data.min_deposit || "0";
+  $("public_channel").value = data.public_channel || "";
+  $("site_id").value = data.site_id || "1";
+  $("welcome_photo_url").value = data.welcome_photo_url || "";
+  $("affiliate_preview").textContent = "Preview (same for all users): " + (data.affiliate_link_preview || "");
+}
+function fillButtons(data) {
+  const box = $("buttonsBox");
+  box.innerHTML = "<h2>Button texts (BN / EN) + style + custom emoji id</h2>";
+  BUTTON_KEYS.forEach((k) => {
+    const bn = data.buttons[k + "_bn"] || "";
+    const en = data.buttons[k + "_en"] || "";
+    const style = data.buttons["style_" + k] || "primary";
+    const icon = data.buttons["icon_" + k] || "";
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <strong>${k}</strong>
+      <div class="grid 2" style="margin-top:8px">
+        <div class="field"><label>BN</label><input data-k="${k}_bn" value="${bn.replace(/"/g,""")}" style="width:100%"></div>
+        <div class="field"><label>EN</label><input data-k="${k}_en" value="${en.replace(/"/g,""")}" style="width:100%"></div>
+        <div class="field"><label>Style</label>
+          <select data-k="style_${k}">
+            <option value="primary" ${style==="primary"?"selected":""}>primary</option>
+            <option value="success" ${style==="success"?"selected":""}>success</option>
+            <option value="danger" ${style==="danger"?"selected":""}>danger</option>
+          </select>
+        </div>
+        <div class="field"><label>Custom emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%" placeholder="numeric id"></div>
+      </div>`;
+    box.appendChild(div);
+  });
+}
+
+$("btnSaveLinks").onclick = async () => {
+  try {
+    await api("/api/settings/bulk", {
+      method: "POST",
+      body: JSON.stringify({
+        items: {
+          affiliate_link_base: $("affiliate_link_base").value,
+          vip_group_link: $("vip_group_link").value,
+          min_deposit: $("min_deposit").value,
+          public_channel: $("public_channel").value,
+          site_id: $("site_id").value,
+          welcome_photo_url: $("welcome_photo_url").value,
+        },
+      }),
+    });
+    toast("Links saved");
+  } catch (e) { alert(e.message); }
+};
+
+$("btnSaveButtons").onclick = async () => {
+  try {
+    const items = {};
+    document.querySelectorAll("#buttonsBox [data-k]").forEach((el) => {
+      items[el.getAttribute("data-k")] = el.value;
+    });
+    await api("/api/settings/bulk", { method: "POST", body: JSON.stringify({ items }) });
+    toast("Buttons saved");
+  } catch (e) { alert(e.message); }
+};
+
+function loadMsgEditor() {
+  const key = $("msgKey").value;
+  const lang = $("msgLang").value;
+  const sk = "msg_" + key + "_" + lang;
+  $("msgValue").value = messagesCache[sk] || "";
+  $("msgSource").textContent = "Source: " + (messagesCache[sk + "__source"] || "-");
+  $("msgPreview").innerHTML = renderTgHtml($("msgValue").value);
+}
+$("msgKey").onchange = loadMsgEditor;
+$("msgLang").onchange = loadMsgEditor;
+$("msgValue").oninput = () => {
+  $("msgPreview").innerHTML = renderTgHtml($("msgValue").value);
+};
+$("btnInsertEmoji").onclick = () => {
+  const sample = '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> ';
+  const ta = $("msgValue");
+  ta.value = sample + ta.value;
+  ta.dispatchEvent(new Event("input"));
+};
+$("btnSaveMsg").onclick = async () => {
+  try {
+    await api("/api/messages", {
+      method: "POST",
+      body: JSON.stringify({
+        key: $("msgKey").value,
+        lang: $("msgLang").value,
+        value: $("msgValue").value,
+      }),
+    });
+    toast("Message saved (HTML + tg-emoji)");
+    await loadAll();
+  } catch (e) { alert(e.message); }
+};
+
+$("btnAiGen").onclick = async () => {
+  try {
+    const data = await api("/api/ai/caption", {
+      method: "POST",
+      body: JSON.stringify({
+        topic: $("aiTopic").value,
+        lang: $("aiLang").value,
+        tone: $("aiTone").value,
+        include_tg_emoji: $("aiPrem").checked,
+      }),
+    });
+    $("aiOut").value = data.html || "";
+    $("aiPreview").innerHTML = renderTgHtml(data.html || "");
+    toast("Generated (" + data.source + ")");
+  } catch (e) { alert(e.message); }
+};
+$("aiOut").oninput = () => {
+  $("aiPreview").innerHTML = renderTgHtml($("aiOut").value);
+};
+$("btnAiToWelcome").onclick = () => {
+  document.querySelector('[data-tab="messages"]').click();
+  $("msgKey").value = "welcome";
+  $("msgLang").value = $("aiLang").value;
+  $("msgValue").value = $("aiOut").value;
+  loadMsgEditor();
+};
+
+async function loadStats() {
+  const s = await api("/api/stats");
+  $("statsBox").innerHTML = `
+    <div><div class="muted">Users</div><div class="stat">${s.total_users}</div></div>
+    <div><div class="muted">Verified</div><div class="stat">${s.verified}</div></div>
+    <div><div class="muted">Joined VIP</div><div class="stat">${s.joined}</div></div>
+    <div><div class="muted">Postbacks</div><div class="stat">${s.postbacks}</div></div>
+    <div><div class="muted">Total deposit</div><div class="stat">$${Number(s.total_deposit).toFixed(2)}</div></div>
+    <div><div class="muted">Min deposit</div><div class="stat">$${s.min_deposit}</div></div>`;
+  const u = await api("/api/users?limit=40");
+  $("usersBody").innerHTML = (u.users || []).map((x) => `
+    <tr>
+      <td><code>${x.telegram_id}</code></td>
+      <td>${x.full_name || x.username || "-"}</td>
+      <td>${x.trader_id || "-"}</td>
+      <td>$${Number(x.total_deposit || 0).toFixed(2)}</td>
+      <td><span class="badge ${x.is_verified ? "ok" : "no"}">${x.is_verified ? "Yes" : "No"}</span></td>
+      <td><span class="badge ${x.has_joined ? "ok" : "no"}">${x.has_joined ? "Yes" : "No"}</span></td>
+    </tr>`).join("");
+}
+
+async function loadAll() {
+  const data = await api("/api/settings");
+  fillLinks(data);
+  fillButtons(data);
+  const msgs = await api("/api/messages");
+  messagesCache = msgs.messages || {};
+  messageKeys = msgs.keys || [];
+  const sel = $("msgKey");
+  sel.innerHTML = messageKeys.map((k) => `<option value="${k}">${k}</option>`).join("");
+  loadMsgEditor();
+  await loadStats();
+  toast("Loaded");
+}
+
+$("btnLoad").onclick = () => loadAll().catch((e) => alert(e.message));
+
+// init token from storage
+$("token").value = localStorage.getItem("admin_token") || "";
+if ($("token").value) loadAll().catch(() => {});
+</script>
+</body>
+</html>
