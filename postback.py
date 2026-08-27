@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from sqlalchemy import select
 from database.models import User, PostbackLog
@@ -9,27 +10,33 @@ from locales import get_text
 from config import settings
 from aiogram import Bot
 import json
+import os
 
-app = FastAPI(title="Quotex Postback Receiver")
+from admin_web import router as admin_router, get_message_text
+
+app = FastAPI(title="Quotex Postback + Admin")
 bot = Bot(token=settings.BOT_TOKEN)
+
+# Web admin UI + API
+app.include_router(admin_router)
+
+_static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(_static_dir):
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
 @app.get("/")
 @app.get("/health")
 async def health():
-    return JSONResponse({"status": "ok", "service": "quotex-vip-join-bot"})
+    return JSONResponse({
+        "status": "ok",
+        "service": "quotex-vip-join-bot",
+        "admin": "/admin",
+    })
 
 
 @app.api_route("/postback", methods=["GET", "POST"])
 async def postback(request: Request):
-    """
-    Quotex Partner Postback receiver (PHP-style logic).
-
-    - Always saves every postback to postback_logs
-    - Matches user by click_id (Telegram ID) or trader_id
-    - On reg / deposit → marks verified when min_deposit met (default 0 = reg is enough)
-    - Does NOT auto-send unique invite; user sends Trader ID in bot to get static VIP link
-    """
     if request.method == "GET":
         params = dict(request.query_params)
     else:
@@ -64,7 +71,6 @@ async def postback(request: Request):
     min_dep = await get_min_deposit()
 
     async with async_session() as session:
-        # 1) Always log
         log = PostbackLog(
             click_id=click_id or None,
             trader_id=trader_id or None,
@@ -78,7 +84,6 @@ async def postback(request: Request):
         session.add(log)
         await session.commit()
 
-        # 2) Try match existing Telegram user
         user = None
         if click_id:
             try:
@@ -97,11 +102,8 @@ async def postback(request: Request):
             user = result.scalar_one_or_none()
 
         if not user:
-            # No Telegram user yet — log is enough.
-            # User will send Trader ID later in the bot (PHP style).
             return PlainTextResponse("OK", status_code=200)
 
-        # 3) Update user fields
         had_trader = bool(user.trader_id)
         prev_deposit = float(user.total_deposit or 0)
 
@@ -117,11 +119,8 @@ async def postback(request: Request):
         if event_id:
             user.last_event_id = str(event_id)
 
-        # Verify when deposit reaches min (min_deposit=0 means reg is enough)
         just_verified = False
         total_now = float(user.total_deposit or 0)
-
-        # PHP style: status=reg alone can verify when min_deposit <= 0
         reg_ok = status in ("reg", "registration", "register") and bool(trader_id)
         deposit_ok = total_now >= min_dep
 
@@ -134,14 +133,13 @@ async def postback(request: Request):
 
         lang = user.language or "bn"
 
-        # 4) Optional notify (no unique invite — user must send Trader ID for link)
         try:
             if just_verified:
                 vip_link = await get_vip_group_link()
                 if vip_link:
                     await bot.send_message(
                         chat_id=user.telegram_id,
-                        text=get_text(lang, "invite_ready", link=vip_link),
+                        text=await get_message_text(lang, "invite_ready", link=vip_link),
                         parse_mode="HTML",
                         disable_web_page_preview=True,
                     )
@@ -155,7 +153,7 @@ async def postback(request: Request):
                 if trader_id and (not had_trader or sumdep == 0):
                     await bot.send_message(
                         chat_id=user.telegram_id,
-                        text=get_text(
+                        text=await get_message_text(
                             lang,
                             "account_created_success",
                             trader_id=trader_id,
