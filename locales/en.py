@@ -13,7 +13,7 @@ TEXTS = {
         "If you have not opened an account with our Affiliate Link:\n\n"
         "• Create a new Account using our Link.\n"
         "• Verify your Account.\n"
-        "• Deposit at least $20.\n\n"
+        "• Make the minimum deposit.\n\n"
         '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
         "Send only an English 8-digit Trader ID. Do not send name, screenshot, or any other info.\n\n"
         '<tg-emoji emoji-id="5341357385279612709">📘</tg-emoji> '
@@ -46,38 +46,45 @@ TEXTS = {
     "trader_id_saved": (
         "✅ Trader ID saved: <code>{trader_id}</code>"
     ),
+    "account_created_success": (
+        "✅ <b>Success!</b> Account found via our Affiliate Link.\n\n"
+        "🆔 Trader ID: <code>{trader_id}</code>\n\n"
+        "Now deposit at least <b>${min_deposit}</b>.\n"
+        "After deposit you will get the VIP group link."
+    ),
+    "deposit_received_need_more": (
+        "💰 Deposit received: <b>${amount:.2f}</b>\n"
+        "Total: <b>${total:.2f}</b> / Required: <b>${min_deposit}</b>\n\n"
+        "Please deposit more, then send Trader ID or wait."
+    ),
     "not_from_our_link": (
         "❌ <b>Account was not created with our Affiliate Link</b>\n\n"
         "Trader ID: <code>{trader_id}</code>\n\n"
         "You did not open the account via our link, or it is not in our system yet.\n\n"
         "✅ What to do:\n"
-        "1️⃣ Click the button below and create a <b>new</b> account\n"
+        "1️⃣ Click the button and create a <b>new</b> account\n"
         "2️⃣ Verify your account\n"
-        "3️⃣ Deposit at least $20\n"
+        "3️⃣ Make the minimum deposit\n"
         "4️⃣ Send your 8-digit Trader ID again\n\n"
         "⚠️ Old accounts or other partners' links are not accepted."
     ),
     "need_deposit_hint": (
         "⏳ Not verified yet.\n\n"
-        "Open an account with our Affiliate Link and deposit at least <b>${min_deposit}</b>.\n"
-        "When deposit + Trader ID match, you will get the VIP link.\n\n"
-        "Use the button below to register."
+        "Deposit at least <b>${min_deposit}</b>.\n"
+        "When deposit + Trader ID match, you will get the VIP link."
     ),
 
     "premium_info": (
         "🎁 <b>Premium / VIP Join Process</b>\n\n"
-        "1️⃣ Click the button below to open the registration link\n"
-        "2️⃣ Create a <b>new</b> Quotex account using that link\n"
-        "3️⃣ Deposit at least $20\n"
-        "4️⃣ Send your 8-digit Trader ID to the bot\n"
-        "5️⃣ After verification you will get the VIP invite link\n\n"
-        "⚠️ Use only the Affiliate Link from the bot.\n"
+        "1️⃣ Click Register below\n"
+        "2️⃣ Create a <b>new</b> Quotex account\n"
+        "3️⃣ Make the minimum deposit\n"
+        "4️⃣ Send 8-digit Trader ID\n"
+        "5️⃣ Get VIP invite after verification\n\n"
+        "⚠️ Use only our Affiliate Link.\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
-    "waiting_deposit": (
-        "⏳ Waiting for your deposit...\n\n"
-        "After you deposit under our partner link, the bot will automatically verify and send you the VIP invite link."
-    ),
+    "waiting_deposit": "⏳ Waiting for your deposit...",
     "already_verified": "✅ You are already verified!",
     "invite_ready": (
         "🎉 <b>Congratulations!</b>\n\n"
@@ -88,7 +95,7 @@ TEXTS = {
     ),
     "already_joined": "✅ You have already joined the VIP group.",
     "status_title": "📊 <b>Your Account Status</b>\n\n",
-    "status_not_verified": "❌ Not verified yet. Register with our link and deposit $20+ first.",
+    "status_not_verified": "❌ Not verified yet. Register with our link and deposit first.",
     "status_verified": (
         "✅ Status: <b>Verified</b>\n"
         "🆔 Trader ID: <code>{trader_id}</code>\n"
@@ -99,22 +106,35 @@ TEXTS = {
         "📅 Verified at: {verified_at}\n"
         "👥 Joined VIP: {joined}"
     ),
+    "status_full": (
+        "🆔 Trader ID: <code>{trader_id}</code>\n"
+        "🌍 Country: {country}\n"
+        "✅ Verified: {verified}\n"
+        "📅 Verified at: {verified_at}\n"
+        "👥 Joined VIP: {joined}\n"
+        "💰 Total Deposit: ${total_deposit:.2f}\n"
+        "📥 Last Deposit: ${last_deposit:.2f}\n"
+        "💸 Total Withdraw: ${total_withdraw:.2f}\n"
+        "🎯 Minimum required: ${min_deposit}"
+    ),
+    "history_title": "📜 <b>History (Postback)</b>",
+    "history_empty": "📜 History: no postback yet.",
     "public_channel": "🔗 Free Signal Public Channel:\nhttps://t.me/+gLV8BLij6PAxYjE1",
     "support": "Any problem? Contact admin: @TEADMIN9",
     "create_account_guide": (
         "⭐ <b>How to create new Quotex account</b>\n\n"
-        "1. Click the <b>Register</b> button below\n"
-        "2. Fill the form with new email/phone\n"
+        "1. Click <b>Register</b> below\n"
+        "2. Fill form with new email/phone\n"
         "3. Complete registration\n"
-        "4. Deposit at least $20\n"
-        "5. Send your 8-digit Trader ID to the bot\n\n"
-        "Only new accounts created with our Affiliate Link (lid=<code>1480996</code>) are accepted."
+        "4. Make minimum deposit\n"
+        "5. Send 8-digit Trader ID to the bot\n\n"
+        "Only our Affiliate Link (lid=<code>1480996</code>) is accepted."
     ),
     "delete_account_guide": (
         "❌ <b>How to delete old Quotex account</b>\n\n"
-        "1. Login to your old Quotex account\n"
-        "2. Go to Profile / Settings\n"
-        "3. Request account deletion\n"
-        "4. After deletion create a new account with our link"
+        "1. Login to old account\n"
+        "2. Profile / Settings\n"
+        "3. Request deletion\n"
+        "4. Create new account with our link"
     ),
 }
