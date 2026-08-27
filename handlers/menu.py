@@ -10,7 +10,6 @@ from keyboards import (
     settings_keyboard,
     settings_language_keyboard,
 )
-from locales import get_text
 from services.settings_store import (
     get_affiliate_url,
     get_setting,
@@ -19,6 +18,7 @@ from services.settings_store import (
     get_vip_group_link,
 )
 from handlers.start import get_bot_display_name
+from admin_web import get_message_text
 
 router = Router()
 
@@ -54,7 +54,7 @@ async def menu_back(callback: CallbackQuery, bot: Bot):
     lang = user.language if user else "bn"
     bot_name = await get_bot_display_name(bot)
     register_url = await get_affiliate_url()
-    text = get_text(
+    text = await get_message_text(
         lang,
         "welcome",
         botName=bot_name,
@@ -70,7 +70,7 @@ async def menu_settings(callback: CallbackQuery):
     lang = user.language if user else "bn"
     await _safe_edit(
         callback,
-        get_text(lang, "settings_title"),
+        await get_message_text(lang, "settings_title"),
         reply_markup=await settings_keyboard(lang),
     )
     await callback.answer()
@@ -82,7 +82,7 @@ async def settings_lang(callback: CallbackQuery):
     lang = user.language if user else "bn"
     await _safe_edit(
         callback,
-        get_text(lang, "choose_language"),
+        await get_message_text(lang, "choose_language"),
         reply_markup=await settings_language_keyboard(lang),
     )
     await callback.answer()
@@ -98,7 +98,7 @@ async def menu_premium(callback: CallbackQuery):
         if vip_link:
             await _safe_edit(
                 callback,
-                get_text(lang, "invite_ready", link=vip_link),
+                await get_message_text(lang, "invite_ready", link=vip_link),
                 reply_markup=await back_keyboard(lang),
             )
             await callback.answer()
@@ -107,7 +107,7 @@ async def menu_premium(callback: CallbackQuery):
     if user and user.has_joined:
         await _safe_edit(
             callback,
-            get_text(lang, "already_joined"),
+            await get_message_text(lang, "already_joined"),
             reply_markup=await back_keyboard(lang),
         )
         await callback.answer()
@@ -116,7 +116,7 @@ async def menu_premium(callback: CallbackQuery):
     register_url = await get_affiliate_url()
     await _safe_edit(
         callback,
-        get_text(lang, "premium_info"),
+        await get_message_text(lang, "premium_info"),
         reply_markup=await premium_keyboard(lang, register_url),
     )
     await callback.answer()
@@ -128,11 +128,12 @@ async def menu_status(callback: CallbackQuery):
     lang = user.language if user else "bn"
     min_dep = await get_min_deposit()
 
-    # ভেরিফাই না হলে পূর্ণ স্ট্যাটাস দেখাবে না
     if not user or not user.is_verified:
+        title = await get_message_text(lang, "status_title")
+        body = await get_message_text(lang, "status_not_verified")
         await _safe_edit(
             callback,
-            get_text(lang, "status_title") + get_text(lang, "status_not_verified"),
+            title + body,
             reply_markup=await back_keyboard(lang),
         )
         await callback.answer()
@@ -142,8 +143,8 @@ async def menu_status(callback: CallbackQuery):
     verified = "Yes ✅"
     verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
 
-    text = get_text(lang, "status_title")
-    text += get_text(
+    text = await get_message_text(lang, "status_title")
+    text += await get_message_text(
         lang,
         "status_full",
         trader_id=user.trader_id or "-",
@@ -168,7 +169,7 @@ async def menu_status(callback: CallbackQuery):
         logs = result.scalars().all()
 
     if logs:
-        text += "\n\n" + get_text(lang, "history_title") + "\n"
+        text += "\n\n" + await get_message_text(lang, "history_title") + "\n"
         for log in logs:
             when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
             text += (
@@ -177,7 +178,7 @@ async def menu_status(callback: CallbackQuery):
                 f"uid=<code>{log.trader_id or '-'}</code>\n"
             )
     else:
-        text += "\n\n" + get_text(lang, "history_empty")
+        text += "\n\n" + await get_message_text(lang, "history_empty")
 
     await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
@@ -188,13 +189,13 @@ async def menu_public(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
     channel = await get_setting("public_channel")
-    text = get_text(lang, "public_channel")
+    text = await get_message_text(lang, "public_channel")
     if channel:
-        text = (
-            f"🔗 ফ্রি সিগন্যাল পাবলিক চ্যানেল:\n{channel}"
-            if lang == "bn"
-            else f"🔗 Free Signal Public Channel:\n{channel}"
-        )
+        # keep link dynamic from settings; body template still editable
+        if "{channel}" in text or "{link}" in text:
+            text = text.format(channel=channel, link=channel)
+        else:
+            text = f"{text.rstrip()}\n{channel}" if channel not in text else text
     await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
@@ -203,7 +204,15 @@ async def menu_public(callback: CallbackQuery):
 async def menu_support(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    support = await get_support_text(lang)
+    # prefer msg_support_* then support_text_* settings
+    support = await get_message_text(lang, "support")
+    custom = await get_support_text(lang)
+    if custom and custom != support:
+        # if admin set support_text_bn via Links tab, use that when no msg override
+        from services.settings_store import get_setting as gs
+        msg_ov = await gs(f"msg_support_{lang}", "")
+        if not msg_ov:
+            support = custom
     await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
@@ -215,7 +224,7 @@ async def menu_create(callback: CallbackQuery):
     register_url = await get_affiliate_url()
     await _safe_edit(
         callback,
-        get_text(lang, "create_account_guide"),
+        await get_message_text(lang, "create_account_guide"),
         reply_markup=await premium_keyboard(lang, register_url),
     )
     await callback.answer()
@@ -227,7 +236,7 @@ async def menu_delete(callback: CallbackQuery):
     lang = user.language if user else "bn"
     await _safe_edit(
         callback,
-        get_text(lang, "delete_account_guide"),
+        await get_message_text(lang, "delete_account_guide"),
         reply_markup=await back_keyboard(lang),
     )
     await callback.answer()
