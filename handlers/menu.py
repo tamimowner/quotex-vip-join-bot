@@ -1,6 +1,6 @@
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
-from sqlalchemy import select, or_
+from sqlalchemy import select
 from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import (
@@ -53,7 +53,7 @@ async def menu_back(callback: CallbackQuery, bot: Bot):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
     bot_name = await get_bot_display_name(bot)
-    register_url = await get_affiliate_url(str(callback.from_user.id))
+    register_url = await get_affiliate_url()
     text = get_text(
         lang,
         "welcome",
@@ -113,7 +113,7 @@ async def menu_premium(callback: CallbackQuery):
         await callback.answer()
         return
 
-    register_url = await get_affiliate_url(str(callback.from_user.id))
+    register_url = await get_affiliate_url()
     await _safe_edit(
         callback,
         get_text(lang, "premium_info"),
@@ -128,7 +128,8 @@ async def menu_status(callback: CallbackQuery):
     lang = user.language if user else "bn"
     min_dep = await get_min_deposit()
 
-    if not user:
+    # ভেরিফাই না হলে পূর্ণ স্ট্যাটাস দেখাবে না
+    if not user or not user.is_verified:
         await _safe_edit(
             callback,
             get_text(lang, "status_title") + get_text(lang, "status_not_verified"),
@@ -138,7 +139,7 @@ async def menu_status(callback: CallbackQuery):
         return
 
     joined = "Yes ✅" if user.has_joined else "No ❌"
-    verified = "Yes ✅" if user.is_verified else "No ❌"
+    verified = "Yes ✅"
     verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
 
     text = get_text(lang, "status_title")
@@ -157,12 +158,12 @@ async def menu_status(callback: CallbackQuery):
     )
 
     async with async_session() as session:
-        q = select(PostbackLog).where(
-            or_(
-                PostbackLog.trader_id == (user.trader_id or ""),
-                PostbackLog.click_id == str(callback.from_user.id),
-            )
-        ).order_by(PostbackLog.id.desc()).limit(8)
+        q = (
+            select(PostbackLog)
+            .where(PostbackLog.trader_id == (user.trader_id or ""))
+            .order_by(PostbackLog.id.desc())
+            .limit(8)
+        )
         result = await session.execute(q)
         logs = result.scalars().all()
 
@@ -211,7 +212,7 @@ async def menu_support(callback: CallbackQuery):
 async def menu_create(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    register_url = await get_affiliate_url(str(callback.from_user.id))
+    register_url = await get_affiliate_url()
     await _safe_edit(
         callback,
         get_text(lang, "create_account_guide"),
