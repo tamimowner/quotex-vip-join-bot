@@ -13,8 +13,6 @@
     --muted: #8b9bb4;
     --accent: #3b82f6;
     --ok: #22c55e;
-    --warn: #f59e0b;
-    --danger: #ef4444;
   }
   * { box-sizing: border-box; }
   body {
@@ -37,7 +35,6 @@
   }
   button.secondary { background: #243044; }
   button.ok { background: var(--ok); color: #052e16; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
   nav {
     display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 20px;
     border-bottom: 1px solid var(--border);
@@ -58,22 +55,17 @@
   .preview {
     background: #0b0f14; border: 1px dashed var(--border); border-radius: 10px;
     padding: 14px; min-height: 100px; line-height: 1.5;
-    font-size: 0.95rem;
   }
   .preview b, .preview strong { font-weight: 700; color: #fff; }
-  .preview i, .preview em { font-style: italic; }
   .preview code {
     background: #1e293b; padding: 1px 6px; border-radius: 4px;
     font-family: ui-monospace, monospace; font-size: 0.85em;
   }
-  .preview a { color: #60a5fa; text-decoration: underline; }
-  .preview .tg-e {
-    display: inline-block; font-size: 1.25em; vertical-align: middle;
-    margin: 0 1px; filter: drop-shadow(0 0 2px #3b82f6aa);
-  }
+  .preview a { color: #60a5fa; }
+  .preview .tg-e { display: inline-block; font-size: 1.25em; vertical-align: middle; }
   .preview .tg-e-id {
     font-size: 0.65em; color: var(--muted); vertical-align: super;
-    margin-left: 1px; font-family: ui-monospace, monospace;
+    font-family: ui-monospace, monospace;
   }
   .muted { color: var(--muted); font-size: 0.85rem; }
   .stat { font-size: 1.4rem; font-weight: 700; }
@@ -93,7 +85,6 @@
     background: #1e293b; border: 1px solid var(--border); padding: 6px 10px;
     font-size: 1.1rem; border-radius: 8px;
   }
-  .emoji-bar button:hover { border-color: var(--accent); }
   .hint {
     background: #0d1218; border-left: 3px solid var(--accent);
     padding: 10px 12px; margin-bottom: 12px; border-radius: 0 8px 8px 0;
@@ -151,9 +142,7 @@
   </section>
 
   <section id="tab-buttons" class="panel hidden">
-    <div class="hint">
-      বাটন টেক্সট BN/EN আলাদা সেট করুন। <code>Custom emoji id</code> = Telegram premium custom emoji numeric ID (বাটনে icon_custom_emoji_id)।
-    </div>
+    <div class="hint">Button texts BN/EN + custom emoji id for Telegram buttons.</div>
     <div class="card" id="buttonsBox"></div>
     <button type="button" class="ok" id="btnSaveButtons">Save buttons</button>
   </section>
@@ -161,9 +150,8 @@
   <section id="tab-messages" class="panel hidden">
     <div class="card">
       <div class="hint">
-        Telegram HTML: <code><b></code> <code><i></code> <code><code></code> <code><a href="..."></code>
-        এবং premium: <code><tg-emoji emoji-id="ID">👋</tg-emoji></code>
-        — বটে <code>parse_mode=HTML</code> দিয়ে পাঠানো হয়। নিচে লাইভ মকআপ।
+        HTML: b, i, code, a href — and premium:
+        <code><tg-emoji emoji-id="ID">👋</tg-emoji></code>
       </div>
       <div class="row" style="margin-bottom:12px">
         <div class="field" style="flex:1;min-width:160px">
@@ -184,14 +172,14 @@
         <textarea id="msgValue"></textarea>
       </div>
       <div class="field">
-        <label>Live HTML mockup (tg-emoji → fallback + id tip)</label>
+        <label>Live HTML mockup</label>
         <div class="preview" id="msgPreview"></div>
       </div>
       <p class="muted" id="msgSource"></p>
       <div class="row">
         <button type="button" class="ok" id="btnSaveMsg">Save message</button>
-        <button type="button" class="secondary" id="btnWrapBold"><b></button>
-        <button type="button" class="secondary" id="btnWrapCode"><code></button>
+        <button type="button" class="secondary" id="btnWrapBold">b</button>
+        <button type="button" class="secondary" id="btnWrapCode">code</button>
       </div>
     </div>
   </section>
@@ -226,7 +214,6 @@
       <div class="row" style="margin-top:10px">
         <button type="button" class="secondary" id="btnAiToWelcome">Copy → welcome message editor</button>
       </div>
-      <p class="muted">Optional: set env <code>OPENAI_API_KEY</code> for real AI. Without it, smart templates are used.</p>
     </div>
   </section>
 
@@ -290,40 +277,25 @@ function toast(msg) {
   setTimeout(() => (el.style.display = "none"), 2200);
 }
 
-/** Safe HTML mockup for Telegram messages (b/i/code/a + tg-emoji) */
 function renderTgHtml(html) {
-  const raw = html || "";
-  // Escape everything first
-  let s = raw
+  let s = (html || "")
     .replace(/&/g, "&")
     .replace(/</g, "<")
     .replace(/>/g, ">");
-  // Restore allowed tags (Telegram HTML subset)
   s = s.replace(/<(\/?)(b|strong|i|em|u|s|code|pre)\s*>/gi, "<$1$2>");
-  // <a href="...">
   s = s.replace(
     /<a\s+href=(?:"|"|')([^"'&]+)(?:"|"|')\s*>/gi,
     '<a href="$1" target="_blank" rel="noopener">'
   );
   s = s.replace(/<\/a>/gi, "</a>");
-  // <tg-emoji emoji-id="NUM">fallback</tg-emoji>
   s = s.replace(
     /<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
     function (_, id, fb) {
-      const fallback = fb || "⭐";
-      return (
-        '<span class="tg-e" title="emoji-id: ' +
-        id +
-        '">' +
-        fallback +
-        '</span><span class="tg-e-id">' +
-        id.slice(-4) +
-        "</span>"
-      );
+      return '<span class="tg-e" title="emoji-id: ' + id + '">' + (fb || "⭐") +
+        '</span><span class="tg-e-id">' + id.slice(-4) + "</span>";
     }
   );
-  s = s.replace(/\n/g, "<br>");
-  return s;
+  return s.replace(/\n/g, "<br>");
 }
 
 function insertAtCursor(ta, text) {
@@ -331,24 +303,19 @@ function insertAtCursor(ta, text) {
   const end = ta.selectionEnd || 0;
   const v = ta.value;
   ta.value = v.slice(0, start) + text + v.slice(end);
-  ta.selectionStart = ta.selectionEnd = start + text.length;
   ta.focus();
   ta.dispatchEvent(new Event("input"));
 }
-
 function wrapSelection(ta, open, close) {
   const start = ta.selectionStart || 0;
   const end = ta.selectionEnd || 0;
   const v = ta.value;
   const sel = v.slice(start, end) || "text";
   ta.value = v.slice(0, start) + open + sel + close + v.slice(end);
-  ta.selectionStart = start + open.length;
-  ta.selectionEnd = start + open.length + sel.length;
   ta.focus();
   ta.dispatchEvent(new Event("input"));
 }
 
-// Build emoji bar
 (function () {
   const bar = $("emojiBar");
   TG_EMOJI_SAMPLES.forEach((e) => {
@@ -357,15 +324,12 @@ function wrapSelection(ta, open, close) {
     btn.title = e.name + " id=" + e.id;
     btn.textContent = e.fb;
     btn.onclick = () => {
-      const tag =
-        '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ";
-      insertAtCursor($("msgValue"), tag);
+      insertAtCursor($("msgValue"), '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ");
     };
     bar.appendChild(btn);
   });
 })();
 
-// Tabs
 document.querySelectorAll("nav .tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll("nav .tab").forEach((b) => b.classList.remove("active"));
@@ -377,7 +341,7 @@ document.querySelectorAll("nav .tab").forEach((btn) => {
 
 $("btnSaveToken").onclick = () => {
   setToken($("token").value.trim());
-  toast("Token saved in browser");
+  toast("Token saved");
 };
 
 function fillLinks(data) {
@@ -388,11 +352,11 @@ function fillLinks(data) {
   $("site_id").value = data.site_id || "1";
   $("welcome_photo_url").value = data.welcome_photo_url || "";
   $("affiliate_preview").textContent =
-    "Preview (same for all users): " + (data.affiliate_link_preview || "");
+    "Preview (same for all): " + (data.affiliate_link_preview || "");
 }
 function fillButtons(data) {
   const box = $("buttonsBox");
-  box.innerHTML = "<h2>Button texts (BN / EN) + style + custom emoji id</h2>";
+  box.innerHTML = "<h2>Buttons BN / EN + style + emoji id</h2>";
   BUTTON_KEYS.forEach((k) => {
     const bn = data.buttons[k + "_bn"] || "";
     const en = data.buttons[k + "_en"] || "";
@@ -412,7 +376,7 @@ function fillButtons(data) {
             <option value="danger" ${style === "danger" ? "selected" : ""}>danger</option>
           </select>
         </div>
-        <div class="field"><label>Custom emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%" placeholder="numeric id"></div>
+        <div class="field"><label>Custom emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%"></div>
       </div>`;
     box.appendChild(div);
   });
@@ -434,9 +398,7 @@ $("btnSaveLinks").onclick = async () => {
       }),
     });
     toast("Links saved");
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 };
 
 $("btnSaveButtons").onclick = async () => {
@@ -447,9 +409,7 @@ $("btnSaveButtons").onclick = async () => {
     });
     await api("/api/settings/bulk", { method: "POST", body: JSON.stringify({ items }) });
     toast("Buttons saved");
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 };
 
 function loadMsgEditor() {
@@ -477,11 +437,9 @@ $("btnSaveMsg").onclick = async () => {
         value: $("msgValue").value,
       }),
     });
-    toast("Message saved (HTML + tg-emoji)");
+    toast("Message saved");
     await loadAll();
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 };
 
 $("btnAiGen").onclick = async () => {
@@ -498,9 +456,7 @@ $("btnAiGen").onclick = async () => {
     $("aiOut").value = data.html || "";
     $("aiPreview").innerHTML = renderTgHtml(data.html || "");
     toast("Generated (" + data.source + ")");
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 };
 $("aiOut").oninput = () => {
   $("aiPreview").innerHTML = renderTgHtml($("aiOut").value);
@@ -523,9 +479,7 @@ async function loadStats() {
     <div><div class="muted">Total deposit</div><div class="stat">$${Number(s.total_deposit).toFixed(2)}</div></div>
     <div><div class="muted">Min deposit</div><div class="stat">$${s.min_deposit}</div></div>`;
   const u = await api("/api/users?limit=40");
-  $("usersBody").innerHTML = (u.users || [])
-    .map(
-      (x) => `
+  $("usersBody").innerHTML = (u.users || []).map((x) => `
     <tr>
       <td><code>${x.telegram_id}</code></td>
       <td>${x.full_name || x.username || "-"}</td>
@@ -533,9 +487,7 @@ async function loadStats() {
       <td>$${Number(x.total_deposit || 0).toFixed(2)}</td>
       <td><span class="badge ${x.is_verified ? "ok" : "no"}">${x.is_verified ? "Yes" : "No"}</span></td>
       <td><span class="badge ${x.has_joined ? "ok" : "no"}">${x.has_joined ? "Yes" : "No"}</span></td>
-    </tr>`
-    )
-    .join("");
+    </tr>`).join("");
 }
 
 async function loadAll() {
@@ -545,8 +497,7 @@ async function loadAll() {
   const msgs = await api("/api/messages");
   messagesCache = msgs.messages || {};
   messageKeys = msgs.keys || [];
-  const sel = $("msgKey");
-  sel.innerHTML = messageKeys.map((k) => `<option value="${k}">${k}</option>`).join("");
+  $("msgKey").innerHTML = messageKeys.map((k) => `<option value="${k}">${k}</option>`).join("");
   loadMsgEditor();
   await loadStats();
   toast("Loaded");
@@ -554,9 +505,22 @@ async function loadAll() {
 
 $("btnLoad").onclick = () => loadAll().catch((e) => alert(e.message));
 
-// init token from storage
-$("token").value = localStorage.getItem("admin_token") || "";
-if ($("token").value) loadAll().catch(() => {});
+// Token: URL ?token= → localStorage → input
+(function initAuth() {
+  const q = new URLSearchParams(location.search).get("token");
+  if (q) {
+    setToken(q);
+    // clean token from address bar without reload
+    try {
+      const u = new URL(location.href);
+      u.searchParams.delete("token");
+      history.replaceState({}, "", u.pathname + u.search);
+    } catch (_) {}
+  } else {
+    $("token").value = localStorage.getItem("admin_token") || "";
+  }
+  if (token()) loadAll().catch(() => {});
+})();
 </script>
 </body>
 </html>
