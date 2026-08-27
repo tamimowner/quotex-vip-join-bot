@@ -70,7 +70,7 @@ async def menu_settings(callback: CallbackQuery):
     lang = user.language if user else "bn"
     await _safe_edit(
         callback,
-        get_text(lang, "settings_settings_title"),
+        get_text(lang, "settings_title"),
         reply_markup=await settings_keyboard(lang),
     )
     await callback.answer()
