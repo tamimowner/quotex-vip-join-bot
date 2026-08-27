@@ -13,9 +13,9 @@ TEXTS = {
         "If you have not opened an account with our Affiliate Link:\n\n"
         "• Create a new Account using our Link.\n"
         "• Verify your Account.\n"
-        "• Make the minimum deposit.\n\n"
+        "• Make the minimum deposit (if required).\n\n"
         '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
-        "Send only an English 8-digit Trader ID. Do not send name, screenshot, or any other info.\n\n"
+        "Send only an English 6–12 digit Trader ID. Do not send name, screenshot, or any other info.\n\n"
         '<tg-emoji emoji-id="5341357385279612709">📘</tg-emoji> '
         "For details, check the Tutorial below."
     ),
@@ -40,7 +40,7 @@ TEXTS = {
 
     "invalid_trader_id": (
         "❌ Invalid format.\n"
-        "Send only an English <b>8-digit</b> Trader ID.\n"
+        "Send only an English <b>6–12 digit</b> Trader ID.\n"
         "Example: <code>12345678</code>"
     ),
     "trader_id_saved": (
@@ -49,8 +49,8 @@ TEXTS = {
     "account_created_success": (
         "✅ <b>Success!</b> Account found via our Affiliate Link.\n\n"
         "🆔 Trader ID: <code>{trader_id}</code>\n\n"
-        "Now deposit at least <b>${min_deposit}</b>.\n"
-        "After deposit you will get the VIP group link."
+        "Now deposit at least <b>${min_deposit}</b> (if required).\n"
+        "After registration/deposit match you will get the VIP group link."
     ),
     "deposit_received_need_more": (
         "💰 Deposit received: <b>${amount:.2f}</b>\n"
@@ -64,8 +64,8 @@ TEXTS = {
         "✅ What to do:\n"
         "1️⃣ Click the button and create a <b>new</b> account\n"
         "2️⃣ Verify your account\n"
-        "3️⃣ Make the minimum deposit\n"
-        "4️⃣ Send your 8-digit Trader ID again\n\n"
+        "3️⃣ Make the minimum deposit (if required)\n"
+        "4️⃣ Send your Trader ID again\n\n"
         "⚠️ Old accounts or other partners' links are not accepted."
     ),
     "need_deposit_hint": (
@@ -78,9 +78,9 @@ TEXTS = {
         "🎁 <b>Premium / VIP Join Process</b>\n\n"
         "1️⃣ Click Register below\n"
         "2️⃣ Create a <b>new</b> Quotex account\n"
-        "3️⃣ Make the minimum deposit\n"
-        "4️⃣ Send 8-digit Trader ID\n"
-        "5️⃣ Get VIP invite after verification\n\n"
+        "3️⃣ Make the minimum deposit (if required)\n"
+        "4️⃣ Send Trader ID to the bot\n"
+        "5️⃣ Get VIP group link after verification\n\n"
         "⚠️ Use only our Affiliate Link.\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
@@ -89,9 +89,9 @@ TEXTS = {
     "invite_ready": (
         "🎉 <b>Congratulations!</b>\n\n"
         "Your account has been verified.\n"
-        "Here is your <b>personal</b> VIP group invite link:\n\n"
+        "Join the VIP group:\n\n"
         "{link}\n\n"
-        "⚠️ This link is only for you. It will stop working after you join."
+        "✅ Click the link to join."
     ),
     "already_joined": "✅ You have already joined the VIP group.",
     "status_title": "📊 <b>Your Account Status</b>\n\n",
@@ -126,8 +126,8 @@ TEXTS = {
         "1. Click <b>Register</b> below\n"
         "2. Fill form with new email/phone\n"
         "3. Complete registration\n"
-        "4. Make minimum deposit\n"
-        "5. Send 8-digit Trader ID to the bot\n\n"
+        "4. Make minimum deposit (if required)\n"
+        "5. Send Trader ID to the bot\n\n"
         "Only our Affiliate Link (lid=<code>1480996</code>) is accepted."
     ),
     "delete_account_guide": (
