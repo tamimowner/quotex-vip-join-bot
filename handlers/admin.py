@@ -1,5 +1,11 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    WebAppInfo,
+)
 from aiogram.enums import MessageEntityType
 from aiogram.filters import Command, BaseFilter
 from sqlalchemy import select, func
@@ -45,7 +51,6 @@ def _admin_web_token() -> str:
 
 
 def _web_admin_base_url() -> str:
-    """Public base URL of the deployed app (no trailing slash)."""
     for key in (
         "WEB_BASE_URL",
         "ADMIN_WEB_URL",
@@ -60,24 +65,75 @@ def _web_admin_base_url() -> str:
     return ""
 
 
+def _web_admin_url() -> str:
+    base = _web_admin_base_url()
+    if not base:
+        return ""
+    if not base.startswith("https://"):
+        # Telegram WebApp requires HTTPS
+        if base.startswith("http://"):
+            base = "https://" + base[len("http://"):]
+        else:
+            base = "https://" + base
+    token = _admin_web_token()
+    return f"{base}/admin?token={token}"
+
+
 def admin_choose_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="🌐 Web Panel (সব ডেটা + সেটিংস)",
-            callback_data="adm:choose:web",
-            style="success",
-        )],
-        [InlineKeyboardButton(
+    """Web App button opens in-app; Command Panel stays in chat."""
+    rows = []
+    web_url = _web_admin_url()
+    if web_url:
+        rows.append([
+            InlineKeyboardButton(
+                text="🌐 Web App খুলুন",
+                web_app=WebAppInfo(url=web_url),
+            )
+        ])
+        rows.append([
+            InlineKeyboardButton(
+                text="🔗 ব্রাউজারে লিংক",
+                callback_data="adm:choose:web",
+                style="success",
+            )
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(
+                text="🌐 Web Panel (URL সেট করুন)",
+                callback_data="adm:choose:web",
+                style="success",
+            )
+        ])
+    rows.append([
+        InlineKeyboardButton(
             text="⌨️ Command Panel (টেলিগ্রামে)",
             callback_data="adm:choose:cmd",
             style="primary",
-        )],
+        )
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def admin_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌐 Web Panel খুলুন", callback_data="adm:choose:web", style="success")],
+    rows = []
+    web_url = _web_admin_url()
+    if web_url:
+        rows.append([
+            InlineKeyboardButton(
+                text="🌐 Web App খুলুন",
+                web_app=WebAppInfo(url=web_url),
+            )
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(
+                text="🌐 Web Panel",
+                callback_data="adm:choose:web",
+                style="success",
+            )
+        ])
+    rows.extend([
         [InlineKeyboardButton(text="💰 মিনিমাম ডিপোজিট", callback_data="adm:mindep", style="success")],
         [InlineKeyboardButton(text="🖼 ওয়েলকাম ফটো (URL/আপলোড)", callback_data="adm:photo", style="success")],
         [InlineKeyboardButton(text="🔗 কোটেক্স পার্টনার লিংক", callback_data="adm:link", style="primary")],
@@ -91,6 +147,7 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🆘 সাপোর্ট টেক্সট (BN/EN)", callback_data="adm:support", style="primary")],
         [InlineKeyboardButton(text="◀️ প্যানেল বেছে নিন", callback_data="adm:choose", style="primary")],
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 class AdminPendingFilter(BaseFilter):
@@ -108,14 +165,23 @@ async def cmd_admin(message: Message):
         await message.answer("⛔ শুধু অ্যাডমিন (ADMIN_IDS) ব্যবহার করতে পারবে।")
         return
     min_dep = await get_min_deposit()
+    web_url = _web_admin_url()
+    extra = (
+        "\n✅ <b>Web App</b> বাটনে চাপলে টেলিগ্রামের ভিতরেই প্যানেল খুলবে।"
+        if web_url
+        else (
+            "\n⚠️ Web App এর জন্য Railway এ সেট করুন:\n"
+            "• <code>WEB_BASE_URL</code> = https://your-app.up.railway.app\n"
+            "• <code>ADMIN_WEB_TOKEN</code> = গোপন টোকেন"
+        )
+    )
     await message.answer(
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
         f"💰 মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n"
         f"🆔 আপনার ID: <code>{message.from_user.id}</code>\n\n"
-        "কোন প্যানেল খুলবেন?\n\n"
-        "🌐 <b>Web Panel</b> — ব্রাউজারে পুরো কন্ট্রোল\n"
-        "   (লিংক, বাটন, মেসেজ HTML, AI, ইউজার/স্ট্যাটস)\n\n"
-        "⌨️ <b>Command Panel</b> — টেলিগ্রামেই কমান্ড মেনু",
+        "🌐 <b>Web App</b> — টেলিগ্রামেই পুরো কন্ট্রোল + ডেটা\n"
+        "⌨️ <b>Command Panel</b> — চ্যাটে কমান্ড মেনু"
+        + extra,
         reply_markup=admin_choose_kb(),
         parse_mode="HTML",
     )
@@ -140,38 +206,37 @@ async def adm_choose_web(callback: CallbackQuery):
         await callback.answer("Forbidden", show_alert=True)
         return
 
-    base = _web_admin_base_url()
+    web_url = _web_admin_url()
     token = _admin_web_token()
 
-    if base:
-        url = f"{base}/admin?token={token}"
+    if web_url:
         text = (
             "🌐 <b>Web Admin Panel</b>\n\n"
-            "শুধু অ্যাডমিনদের জন্য। এখানে আছে:\n"
-            "• Affiliate / VIP লিংক, মিনিমাম ডিপোজিট\n"
-            "• বাটন টেক্সট (BN/EN) + custom emoji id\n"
-            "• মেসেজ HTML + premium tg-emoji\n"
+            "নিচের <b>Web App খুলুন</b> চাপলে টেলিগ্রামের ভিতরেই খুলবে।\n"
+            "অথবা ব্রাউজার লিংক ব্যবহার করুন।\n\n"
+            "• লিংক / বাটন / মেসেজ HTML\n"
             "• AI ক্যাপশন\n"
             "• ইউজার ও স্ট্যাটস\n\n"
-            f"🔗 <a href=\"{url}\">Web Panel খুলুন</a>\n\n"
-            f"অথবা কপি করুন:\n<code>{url}</code>\n\n"
-            "⚠️ লিংক শেয়ার করবেন না — টোকেন গোপন রাখুন।"
+            f"🔗 <code>{web_url}</code>\n\n"
+            "⚠️ লিংক শেয়ার করবেন না।"
         )
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🌐 Open Web Panel", url=url, style="success")],
+            [InlineKeyboardButton(
+                text="🌐 Web App খুলুন",
+                web_app=WebAppInfo(url=web_url),
+            )],
+            [InlineKeyboardButton(text="🔗 Browser এ খুলুন", url=web_url)],
             [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
             [InlineKeyboardButton(text="◀️ ফিরে", callback_data="adm:choose", style="primary")],
         ])
     else:
         text = (
             "🌐 <b>Web Admin Panel</b>\n\n"
-            "⚠️ <code>WEB_BASE_URL</code> (বা <code>RAILWAY_PUBLIC_DOMAIN</code>) সেট করা নেই।\n\n"
-            "Railway Variables এ যোগ করুন:\n"
+            "⚠️ <code>WEB_BASE_URL</code> সেট করা নেই।\n\n"
+            "Railway Variables:\n"
             "• <code>WEB_BASE_URL</code> = https://your-app.up.railway.app\n"
-            "• <code>ADMIN_WEB_TOKEN</code> = একটি গোপন টোকেন\n\n"
-            f"তারপর ম্যানুয়ালি খুলুন:\n"
-            f"<code>https://YOUR-APP.up.railway.app/admin</code>\n\n"
-            f"টোকেন (হেডার/ইনপুট):\n<code>{token}</code>"
+            "• <code>ADMIN_WEB_TOKEN</code> = গোপন টোকেন\n\n"
+            f"টোকেন: <code>{token}</code>"
         )
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
@@ -305,8 +370,7 @@ async def adm_users(callback: CallbackQuery):
     if not is_admin(callback.from_user.id):
         return
     async with async_session() as session:
-        result = await session.execute(select(User).order_by(User.id.desc()).limit(10)
-        )
+        result = await session.execute(select(User).order_by(User.id.desc()).limit(10))
         users = result.scalars().all()
     lines = []
     for u in users:
