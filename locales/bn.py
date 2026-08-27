@@ -46,6 +46,17 @@ TEXTS = {
     "trader_id_saved": (
         "✅ Trader ID সেভ হয়েছে: <code>{trader_id}</code>"
     ),
+    "not_from_our_link": (
+        "❌ <b>আমাদের Affiliate Link থেকে অ্যাকাউন্ট তৈরি হয়নি</b>\n\n"
+        "Trader ID: <code>{trader_id}</code>\n\n"
+        "আপনি আমাদের লিংক দিয়ে অ্যাকাউন্ট খোলেননি, অথবা এখনো আমাদের সিস্টেমে রেকর্ড আসেনি।\n\n"
+        "✅ কী করবেন:\n"
+        "1️⃣ নিচের বাটনে ক্লিক করে <b>নতুন</b> অ্যাকাউন্ট তৈরি করুন\n"
+        "2️⃣ Account Verify করুন\n"
+        "3️⃣ ন্যূনতম $20 Deposit করুন\n"
+        "4️⃣ আবার 8-digit Trader ID পাঠান\n\n"
+        "⚠️ পুরোনো/অন্য লিংকের অ্যাকাউন্ট গ্রহণযোগ্য নয়।"
+    ),
     "need_deposit_hint": (
         "⏳ এখনো ভেরিফাই হয়নি।\n\n"
         "আমাদের Affiliate Link দিয়ে অ্যাকাউন্ট খুলে ন্যূনতম <b>${min_deposit}</b> Deposit করুন।\n"
