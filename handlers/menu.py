@@ -11,7 +11,13 @@ from keyboards import (
     settings_language_keyboard,
 )
 from locales import get_text
-from services.settings_store import get_affiliate_url, get_setting, get_support_text, get_min_deposit
+from services.settings_store import (
+    get_affiliate_url,
+    get_setting,
+    get_support_text,
+    get_min_deposit,
+    get_vip_group_link,
+)
 
 router = Router()
 
@@ -81,14 +87,17 @@ async def menu_premium(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
 
-    if user and user.is_verified and user.invite_link and not user.has_joined:
-        await _safe_edit(
-            callback,
-            get_text(lang, "invite_ready", link=user.invite_link),
-            reply_markup=await back_keyboard(lang),
-        )
-        await callback.answer()
-        return
+    # Already verified → show static VIP link
+    if user and user.is_verified:
+        vip_link = await get_vip_group_link() or user.invite_link
+        if vip_link:
+            await _safe_edit(
+                callback,
+                get_text(lang, "invite_ready", link=vip_link),
+                reply_markup=await back_keyboard(lang),
+            )
+            await callback.answer()
+            return
 
     if user and user.has_joined:
         await _safe_edit(
@@ -142,7 +151,6 @@ async def menu_status(callback: CallbackQuery):
         joined=joined,
     )
 
-    # History from postback logs
     async with async_session() as session:
         q = select(PostbackLog).where(
             or_(
