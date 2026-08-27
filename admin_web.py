@@ -6,18 +6,17 @@ Auth: header X-Admin-Token or query ?token=  (ADMIN_WEB_TOKEN env)
 from __future__ import annotations
 
 import os
-import re
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy import select, func, desc
 
 from config import settings
 from database.db import async_session
-from database.models import User, PostbackLog, BotSettings
+from database.models import User, PostbackLog
 from services.settings_store import (
     get_setting,
     set_setting,
@@ -33,7 +32,7 @@ from locales.en import TEXTS as EN_TEXTS
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# Editable bot message keys (HTML + tg-emoji supported)
+# All user-facing captions / page bodies (HTML + tg-emoji)
 MESSAGE_KEYS = [
     "welcome",
     "premium_info",
@@ -41,8 +40,25 @@ MESSAGE_KEYS = [
     "not_from_our_link",
     "account_created_success",
     "need_deposit_hint",
+    "deposit_received_need_more",
     "create_account_guide",
+    "delete_account_guide",
     "support",
+    "settings_title",
+    "choose_language",
+    "language_set",
+    "invalid_trader_id",
+    "trader_id_saved",
+    "waiting_deposit",
+    "already_verified",
+    "already_joined",
+    "status_title",
+    "status_not_verified",
+    "status_verified",
+    "status_full",
+    "history_title",
+    "history_empty",
+    "public_channel",
 ]
 
 SETTING_KEYS = [
@@ -73,9 +89,6 @@ async def require_admin(
 ):
     expected = _admin_token()
     got = x_admin_token or token or request.cookies.get("admin_token")
-    if not expected or expected == "changeme":
-        # still allow if token matches "changeme" for first setup — warn in UI
-        pass
     if got != expected:
         raise HTTPException(status_code=401, detail="Unauthorized — set X-Admin-Token or ?token=")
     return True
@@ -99,11 +112,9 @@ class MessageBody(BaseModel):
 class CaptionRequest(BaseModel):
     topic: str = "VIP join"
     lang: str = "bn"
-    tone: str = "friendly"  # friendly | pro | hype
+    tone: str = "friendly"
     include_tg_emoji: bool = True
 
-
-# ---------- Pages ----------
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
@@ -115,14 +126,10 @@ async def admin_page():
         return HTMLResponse(f.read())
 
 
-# ---------- Auth check ----------
-
 @router.get("/api/ping")
 async def api_ping(_: bool = Depends(require_admin)):
     return {"ok": True, "service": "admin", "time": datetime.utcnow().isoformat()}
 
-
-# ---------- Settings ----------
 
 @router.get("/api/settings")
 async def api_get_settings(_: bool = Depends(require_admin)):
@@ -132,7 +139,6 @@ async def api_get_settings(_: bool = Depends(require_admin)):
     data["min_deposit"] = str(await get_min_deposit())
     data["vip_group_link"] = await get_vip_group_link()
     data["affiliate_link_preview"] = await get_affiliate_url()
-    # buttons bn/en
     buttons = {}
     for bk in BUTTON_KEYS:
         buttons[f"{bk}_bn"] = await get_setting(f"{bk}_bn", "") or get_text("bn", bk)
@@ -159,8 +165,6 @@ async def api_bulk_settings(body: BulkSettingsBody, _: bool = Depends(require_ad
     return {"ok": True, "count": len(body.items)}
 
 
-# ---------- Messages (HTML + tg-emoji) ----------
-
 @router.get("/api/messages")
 async def api_get_messages(_: bool = Depends(require_admin)):
     out = {}
@@ -185,8 +189,6 @@ async def api_set_message(body: MessageBody, _: bool = Depends(require_admin)):
     await set_setting(sk, body.value)
     return {"ok": True, "key": sk}
 
-
-# ---------- Stats & users ----------
 
 @router.get("/api/stats")
 async def api_stats(_: bool = Depends(require_admin)):
@@ -242,8 +244,6 @@ async def api_users(
     }
 
 
-# ---------- AI Caption (templates + optional OpenAI) ----------
-
 TG_EMOJIS = {
     "wave": ('<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji>', "👋"),
     "spark": ('<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>', "✨"),
@@ -261,7 +261,6 @@ def _e(name: str, premium: bool) -> str:
 
 @router.post("/api/ai/caption")
 async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin)):
-    """Generate HTML caption. Uses OpenAI if OPENAI_API_KEY set, else smart templates."""
     topic = (body.topic or "VIP").strip()
     lang = body.lang if body.lang in ("bn", "en") else "bn"
     prem = body.include_tg_emoji
@@ -301,12 +300,10 @@ async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin))
                 text = r.json()["choices"][0]["message"]["content"].strip()
                 return {"ok": True, "source": "openai", "html": text}
         except Exception as e:
-            # fall through to template
             err = str(e)
     else:
         err = None
 
-    # Template fallback
     if lang == "bn":
         html = (
             f'{_e("wave", prem)} <b>{topic}</b> {_e("spark", prem)}\n\n'
@@ -325,8 +322,6 @@ async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin))
         )
     return {"ok": True, "source": "template", "html": html, "note": err}
 
-
-# ---------- Helpers for bot: load message override ----------
 
 async def get_message_text(lang: str, key: str, **kwargs) -> str:
     """Prefer DB override msg_{key}_{lang}, else locale file."""
