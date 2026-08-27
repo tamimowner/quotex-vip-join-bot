@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
 from sqlalchemy import select, or_
 from database.models import User, PostbackLog
@@ -18,10 +18,9 @@ from services.settings_store import (
     get_min_deposit,
     get_vip_group_link,
 )
+from handlers.start import get_bot_display_name
 
 router = Router()
-
-BOT_DISPLAY_NAME = "SKV VIP"
 
 
 async def get_user(telegram_id: int) -> User | None:
@@ -50,14 +49,15 @@ async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
 
 
 @router.callback_query(F.data == "menu:back")
-async def menu_back(callback: CallbackQuery):
+async def menu_back(callback: CallbackQuery, bot: Bot):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
+    bot_name = await get_bot_display_name(bot)
     register_url = await get_affiliate_url(str(callback.from_user.id))
     text = get_text(
         lang,
         "welcome",
-        botName=BOT_DISPLAY_NAME,
+        botName=bot_name,
         register_url=register_url,
     )
     await _safe_edit(callback, text, reply_markup=await main_menu(lang))
