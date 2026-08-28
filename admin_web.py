@@ -350,6 +350,35 @@ async def api_users(
     }
 
 
+@router.get("/api/postbacks")
+async def api_postbacks(
+    limit: int = Query(50, ge=1, le=200),
+    _: int = Depends(require_admin),
+):
+    async with async_session() as session:
+        result = await session.execute(
+            select(PostbackLog).order_by(desc(PostbackLog.id)).limit(limit)
+        )
+        rows = result.scalars().all()
+    return {
+        "postbacks": [
+            {
+                "id": r.id,
+                "click_id": r.click_id,
+                "trader_id": r.trader_id,
+                "status": r.status,
+                "event_id": r.event_id,
+                "sumdep": r.sumdep,
+                "sumwithdraw": r.sumwithdraw,
+                "country": r.country,
+                "raw_data": r.raw_data,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in rows
+        ]
+    }
+
+
 TG_EMOJIS = {
     "wave": ('<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji>', "👋"),
     "spark": ('<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>', "✨"),
