@@ -7,11 +7,10 @@ from sqlalchemy import select, func
 from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard
-from locales import get_text
 from config import settings
 from services.settings_store import get_setting, get_affiliate_url, get_min_deposit, get_vip_group_link
 from services.invite import create_unique_invite
-from admin_web import get_message_text
+from services.messages import get_message_text
 
 router = Router()
 
@@ -189,6 +188,7 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         await session.commit()
 
+        # No postback for this trader_id = not from our partner link
         if pb_count == 0 and not user.is_verified:
             await message.answer(
                 await get_message_text(lang, "not_from_our_link", trader_id=trader_id),
