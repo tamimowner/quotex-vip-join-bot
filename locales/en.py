@@ -50,10 +50,20 @@ TEXTS = {
         "✅ Trader ID saved: <code>{trader_id}</code>"
     ),
     "account_created_success": (
-        "✅ <b>Success!</b> Account found via our Affiliate Link.\n\n"
-        "🆔 Trader ID: <code>{trader_id}</code>\n\n"
-        "Now deposit at least <b>${min_deposit}</b> (if required).\n"
-        "After registration/deposit match you will get the VIP group link."
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "Your account has been created successfully "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        "🆔 Trader ID: <code>{trader_id}</code>"
+    ),
+    "account_ok_need_deposit": (
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "Your account has been created successfully "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "No deposit has been made on your account yet\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "Please deposit <b>${min_deposit}</b> to your account, then send your Trader ID to the bot again — you will receive the VIP group link "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
     "deposit_received_need_more": (
         "💰 Deposit received: <b>${amount:.2f}</b>\n"
@@ -79,9 +89,11 @@ TEXTS = {
         '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
     ),
     "need_deposit_hint": (
-        "⏳ Not verified yet.\n\n"
-        "Deposit at least <b>${min_deposit}</b>.\n"
-        "When deposit + Trader ID match, you will get the VIP link."
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "No deposit has been made on your account yet\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "Please deposit <b>${min_deposit}</b> to your account, then send your Trader ID to the bot again — you will receive the VIP group link "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
 
     "premium_info": (
