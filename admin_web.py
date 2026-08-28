@@ -2,7 +2,7 @@
 Web Admin Panel — normal website login (username + password).
 Env:
   ADMIN_USERNAME (default: admin)
-  ADMIN_PASSWORD (required for security; fallback ADMIN_WEB_TOKEN)
+  ADMIN_PASSWORD (required; fallback ADMIN_WEB_TOKEN)
 """
 from __future__ import annotations
 
@@ -91,6 +91,17 @@ def _admin_password() -> str:
     )
 
 
+def _safe_eq(a: str, b: str) -> bool:
+    """Constant-time compare that never raises on length mismatch."""
+    a_b = (a or "").encode("utf-8")
+    b_b = (b or "").encode("utf-8")
+    if len(a_b) != len(b_b):
+        # still run a dummy compare to keep timing flatter
+        hmac.compare_digest(a_b, a_b)
+        return False
+    return hmac.compare_digest(a_b, b_b)
+
+
 def _session_secret() -> bytes:
     raw = (settings.BOT_TOKEN or "") + "|" + _admin_password() + "|admin-web"
     return hashlib.sha256(raw.encode()).digest()
@@ -119,9 +130,9 @@ def _verify_session(session: str | None) -> str | None:
         return None
     payload = f"{username}:{exp}:{nonce}"
     expect = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:40]
-    if not hmac.compare_digest(expect, sig):
+    if not _safe_eq(expect, sig):
         return None
-    if not hmac.compare_digest(username, _admin_username()):
+    if not _safe_eq(username, _admin_username()):
         return None
     return username
 
@@ -138,8 +149,8 @@ async def require_admin(
 
 
 class LoginBody(BaseModel):
-    username: str
-    password: str
+    username: str = ""
+    password: str = ""
 
 
 class SettingBody(BaseModel):
@@ -183,8 +194,8 @@ async def api_auth_login(body: LoginBody):
             500,
             "ADMIN_PASSWORD not set on server. Set ADMIN_PASSWORD in Railway env.",
         )
-    ok_user = hmac.compare_digest((body.username or "").strip(), expected_user)
-    ok_pass = hmac.compare_digest((body.password or "").strip(), expected_pass)
+    ok_user = _safe_eq((body.username or "").strip(), expected_user)
+    ok_pass = _safe_eq((body.password or "").strip(), expected_pass)
     if not (ok_user and ok_pass):
         raise HTTPException(401, "Wrong username or password")
     session = _make_session(expected_user)
