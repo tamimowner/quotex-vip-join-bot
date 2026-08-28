@@ -96,6 +96,7 @@ async def menu_premium(callback: CallbackQuery):
     if user and user.is_verified:
         vip_link = user.invite_link or await get_vip_group_link()
         if vip_link:
+            # No Back / Menu buttons under VIP success message
             await _safe_edit(
                 callback,
                 await get_message_text(
@@ -104,7 +105,7 @@ async def menu_premium(callback: CallbackQuery):
                     link=vip_link,
                     trader_id=user.trader_id or "-",
                 ),
-                reply_markup=await back_keyboard(lang),
+                reply_markup=None,
             )
             await callback.answer()
             return
