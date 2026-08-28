@@ -45,10 +45,7 @@
   .muted { color: var(--muted); font-size: 0.85rem; }
   .stat { font-size: 1.35rem; font-weight: 700; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
-  .badge.ok { background: #14532d; color: #86efac; }
-  .badge.no { background: #44403c; color: #d6d3d1; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .toast { position: fixed; bottom: 16px; right: 16px; background: #14532d; color: #fff; padding: 10px 16px; border-radius: 8px; display: none; z-index: 99; }
   .hidden { display: none !important; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -57,13 +54,14 @@
   .gate { padding: 32px 18px; text-align: center; }
   .gate h2 { margin: 0 0 12px; }
   .gate code { background: #1e293b; padding: 2px 6px; border-radius: 4px; }
+  .raw { font-size: 0.7rem; color: var(--muted); max-width: 220px; word-break: break-all; }
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>🛠 VIP Bot — Web Admin</h1>
-    <div id="authStatus">Checking Telegram…</div>
+    <h1>VIP Bot - Web Admin</h1>
+    <div id="authStatus">Checking Telegram...</div>
   </div>
   <div class="row">
     <button type="button" id="btnAuth" class="secondary">Login</button>
@@ -72,15 +70,14 @@
 </header>
 
 <div id="gate" class="gate hidden">
-  <h2>⛔ Admin login</h2>
-  <p class="muted" id="gateMsg">Open from bot: /admin → Web App</p>
-  <p class="muted" style="margin-top:16px">Railway এ <code>ADMIN_IDS</code> = আপনার Telegram numeric ID থাকতে হবে।</p>
+  <h2>Admin login</h2>
+  <p class="muted" id="gateMsg">Open from bot: /admin - Web App</p>
   <button type="button" id="btnRetry" style="margin-top:16px">Try again</button>
 </div>
 
 <div id="app" class="hidden">
 <nav>
-  <button type="button" class="tab active" data-tab="links">Links & Deposit</button>
+  <button type="button" class="tab active" data-tab="links">Links</button>
   <button type="button" class="tab" data-tab="buttons">Buttons</button>
   <button type="button" class="tab" data-tab="messages">Messages</button>
   <button type="button" class="tab" data-tab="ai">AI</button>
@@ -110,7 +107,7 @@
       <div class="row" style="margin-bottom:12px">
         <div class="field" style="flex:1;min-width:140px"><label>Key</label><select id="msgKey"></select></div>
         <div class="field"><label>Lang</label>
-          <select id="msgLang"><option value="bn">বাংলা</option><option value="en">EN</option></select>
+          <select id="msgLang"><option value="bn">BN</option><option value="en">EN</option></select>
         </div>
       </div>
       <div class="emoji-bar" id="emojiBar"></div>
@@ -129,7 +126,7 @@
     <div class="card grid 2">
       <div class="field"><label>Topic</label><input id="aiTopic" value="VIP Join" /></div>
       <div class="field"><label>Lang</label>
-        <select id="aiLang"><option value="bn">বাংলা</option><option value="en">EN</option></select>
+        <select id="aiLang"><option value="bn">BN</option><option value="en">EN</option></select>
       </div>
       <div class="field"><label>Tone</label>
         <select id="aiTone"><option value="friendly">Friendly</option><option value="pro">Pro</option><option value="hype">Hype</option></select>
@@ -140,13 +137,24 @@
     <div class="card" style="margin-top:12px">
       <textarea id="aiOut"></textarea>
       <div class="preview" id="aiPreview" style="margin-top:8px"></div>
-      <button type="button" class="secondary" id="btnAiToWelcome" style="margin-top:8px">→ welcome</button>
+      <button type="button" class="secondary" id="btnAiToWelcome" style="margin-top:8px">to welcome</button>
     </div>
   </section>
 
   <section id="tab-stats" class="panel hidden">
     <div class="card grid 2" id="statsBox"></div>
     <div class="card">
+      <h3 style="margin:0 0 8px;font-size:0.95rem">Recent postbacks</h3>
+      <p class="muted" id="pbHint">If empty = Quotex Partner postback URL not set</p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Time</th><th>Status</th><th>Trader</th><th>CID</th><th>Dep</th><th>Raw</th></tr></thead>
+          <tbody id="pbBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 8px;font-size:0.95rem">Recent users</h3>
       <div style="overflow-x:auto">
         <table>
           <thead><tr><th>TG</th><th>Name</th><th>Trader</th><th>Dep</th><th>OK</th><th>Join</th></tr></thead>
@@ -166,12 +174,12 @@ const BUTTON_KEYS = [
   "btn_status","btn_support","btn_register","btn_back","btn_settings"
 ];
 const TG_EMOJI_SAMPLES = [
-  { id: "5188481279963715781", fb: "👋" },
-  { id: "5879757713658875847", fb: "✨" },
-  { id: "5215174853895660531", fb: "📢" },
-  { id: "6300954126901577963", fb: "👇" },
-  { id: "5397782960512444700", fb: "📌" },
-  { id: "5420323339723881652", fb: "⚠️" },
+  { id: "5188481279963715781", fb: "W" },
+  { id: "5879757713658875847", fb: "*" },
+  { id: "5215174853895660531", fb: "!" },
+  { id: "6300954126901577963", fb: "v" },
+  { id: "5397782960512444700", fb: "P" },
+  { id: "5420323339723881652", fb: "!" },
 ];
 let sessionKey = localStorage.getItem("admin_session") || "";
 let messagesCache = {};
@@ -182,7 +190,6 @@ function toast(msg) {
   el.style.display = "block";
   setTimeout(() => (el.style.display = "none"), 2200);
 }
-
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function fetchJson(url, opts = {}, timeoutMs = 12000) {
@@ -192,9 +199,7 @@ async function fetchJson(url, opts = {}, timeoutMs = 12000) {
     const res = await fetch(url, { ...opts, signal: ctrl.signal });
     const data = await res.json().catch(() => ({}));
     return { res, data };
-  } finally {
-    clearTimeout(t);
-  }
+  } finally { clearTimeout(t); }
 }
 
 async function api(path, opts = {}) {
@@ -207,40 +212,26 @@ async function api(path, opts = {}) {
 }
 
 function getTg() {
-  try {
-    return (window.Telegram && window.Telegram.WebApp) || null;
-  } catch (_) {
-    return null;
-  }
+  try { return (window.Telegram && window.Telegram.WebApp) || null; } catch (_) { return null; }
 }
-
 function getInitData() {
   const tg = getTg();
   if (!tg) return "";
   try { tg.ready(); tg.expand(); } catch (_) {}
   return (tg.initData || "").trim();
 }
-
 async function waitInitData(maxMs = 2500) {
   const start = Date.now();
   let data = getInitData();
-  while (!data && Date.now() - start < maxMs) {
-    await sleep(200);
-    data = getInitData();
-  }
+  while (!data && Date.now() - start < maxMs) { await sleep(200); data = getInitData(); }
   return data;
 }
 
 function renderTgHtml(html) {
-  let s = String(html || "")
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
+  let s = String(html || "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
   s = s.replace(/<(\/?)(b|strong|i|em|u|s|code|pre)\s*>/gi, "<$1$2>");
-  s = s.replace(
-    /<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
-    function (_, id, fb) { return '<span class="tg-e">' + (fb || "⭐") + "</span>"; }
-  );
+  s = s.replace(/<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
+    function (_, id, fb) { return '<span class="tg-e">' + (fb || "*") + "</span>"; });
   return s.replace(/\n/g, "<br>");
 }
 
@@ -250,7 +241,6 @@ function insertAtCursor(ta, text) {
   ta.focus();
   ta.dispatchEvent(new Event("input"));
 }
-
 function setupEmojiBar() {
   const bar = $("emojiBar");
   if (!bar || bar.childNodes.length) return;
@@ -291,15 +281,11 @@ function fillButtons(data) {
     const icon = data.buttons["icon_" + k] || "";
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = "<strong>" + k + "</strong>" +
-      '<div class="grid 2" style="margin-top:8px">' +
-      '<div class="field"><label>BN</label><input data-k="' + k + '_bn" value="' + bn + '" style="width:100%"></div>' +
-      '<div class="field"><label>EN</label><input data-k="' + k + '_en" value="' + en + '" style="width:100%"></div>' +
-      '<div class="field"><label>Style</label><select data-k="style_' + k + '">' +
-      '<option value="primary"' + (style === "primary" ? " selected" : "") + '>primary</option>' +
-      '<option value="success"' + (style === "success" ? " selected" : "") + '>success</option>' +
-      '<option value="danger"' + (style === "danger" ? " selected" : "") + '>danger</option></select></div>' +
-      '<div class="field"><label>Emoji id</label><input data-k="icon_' + k + '" value="' + icon + '" style="width:100%"></div></div>';
+    div.innerHTML = "<strong>" + k + "</strong><div class=\"grid 2\" style=\"margin-top:8px\">" +
+      "<div class=\"field\"><label>BN</label><input data-k=\"" + k + "_bn\" value=\"" + bn + "\" style=\"width:100%\"></div>" +
+      "<div class=\"field\"><label>EN</label><input data-k=\"" + k + "_en\" value=\"" + en + "\" style=\"width:100%\"></div>" +
+      "<div class=\"field\"><label>Style</label><select data-k=\"style_" + k + "\"><option value=\"primary\"" + (style==="primary"?" selected":"") + ">primary</option><option value=\"success\"" + (style==="success"?" selected":"") + ">success</option><option value=\"danger\"" + (style==="danger"?" selected":"") + ">danger</option></select></div>" +
+      "<div class=\"field\"><label>Emoji id</label><input data-k=\"icon_" + k + "\" value=\"" + icon + "\" style=\"width:100%\"></div></div>";
     box.appendChild(div);
   });
 }
@@ -352,8 +338,7 @@ $("btnSaveMsg").onclick = async () => {
     await api("/api/messages", { method: "POST", body: JSON.stringify({
       key: $("msgKey").value, lang: $("msgLang").value, value: $("msgValue").value,
     })});
-    toast("Saved");
-    await loadAll();
+    toast("Saved"); await loadAll();
   } catch (e) { alert(e.message); }
 };
 
@@ -384,6 +369,21 @@ async function loadStats() {
     "<div><div class=\"muted\">Verified</div><div class=\"stat\">" + s.verified + "</div></div>" +
     "<div><div class=\"muted\">Joined</div><div class=\"stat\">" + s.joined + "</div></div>" +
     "<div><div class=\"muted\">Postbacks</div><div class=\"stat\">" + s.postbacks + "</div></div>";
+
+  const pb = await api("/api/postbacks?limit=40");
+  const list = pb.postbacks || [];
+  $("pbHint").textContent = list.length
+    ? ("Last " + list.length + " hits")
+    : "No postbacks yet. Set Quotex Partner URL: https://YOUR-APP.up.railway.app/postback";
+  $("pbBody").innerHTML = list.map((x) => {
+    const t = (x.created_at || "").replace("T", " ").slice(0, 19);
+    const raw = (x.raw_data || "").slice(0, 120);
+    return "<tr><td>" + t + "</td><td>" + (x.status || "-") +
+      "</td><td>" + (x.trader_id || "-") + "</td><td>" + (x.click_id || "-") +
+      "</td><td>$" + Number(x.sumdep || 0).toFixed(2) +
+      "</td><td class=\"raw\">" + raw + "</td></tr>";
+  }).join("") || "<tr><td colspan=\"6\">Empty</td></tr>";
+
   const u = await api("/api/users?limit=40");
   $("usersBody").innerHTML = (u.users || []).map((x) =>
     "<tr><td><code>" + x.telegram_id + "</code></td><td>" +
@@ -413,7 +413,6 @@ function showApp(statusText) {
   $("gate").classList.add("hidden");
   $("app").classList.remove("hidden");
 }
-
 function showGate(msg) {
   $("authStatus").textContent = msg;
   $("authStatus").className = "err";
@@ -423,14 +422,11 @@ function showGate(msg) {
 }
 
 async function authTelegram() {
-  $("authStatus").textContent = "Checking Telegram…";
+  $("authStatus").textContent = "Checking Telegram...";
   $("authStatus").className = "";
-
   const initData = await waitInitData(3000);
   const tg = getTg();
-
   if (!initData) {
-    // try saved session with timeout
     if (sessionKey) {
       try {
         await api("/api/ping");
@@ -442,40 +438,30 @@ async function authTelegram() {
         sessionKey = "";
       }
     }
-    const hint = !tg
-      ? "Telegram WebApp API নেই — বট থেকে /admin → Web App খুলুন"
-      : "initData খালি — বটের Web App বাটন দিয়ে আবার খুলুন";
-    showGate(hint);
+    showGate(!tg ? "Open from bot /admin Web App" : "initData empty - use Web App button");
     return;
   }
-
   try {
-    $("authStatus").textContent = "Verifying admin…";
+    $("authStatus").textContent = "Verifying admin...";
     const { res, data } = await fetchJson("/admin/api/auth/telegram", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ init_data: initData }),
     });
-    if (!res.ok) {
-      throw new Error(data.detail || ("HTTP " + res.status));
-    }
+    if (!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
     sessionKey = data.session;
     localStorage.setItem("admin_session", sessionKey);
     const u = data.user || {};
-    showApp("✅ " + (u.first_name || "Admin") + " (" + u.id + ")");
+    showApp("OK " + (u.first_name || "Admin") + " (" + u.id + ")");
     await loadAll();
   } catch (e) {
-    const msg = (e && e.name === "AbortError")
-      ? "Server timeout — Railway app চালু আছে?"
-      : (e.message || "Auth failed");
-    showGate(msg);
+    showGate((e && e.name === "AbortError") ? "Server timeout" : (e.message || "Auth failed"));
   }
 }
 
 $("btnLoad").onclick = () => loadAll().catch((e) => alert(e.message));
 $("btnAuth").onclick = () => authTelegram();
 $("btnRetry").onclick = () => authTelegram();
-
 authTelegram();
 </script>
 </body>
