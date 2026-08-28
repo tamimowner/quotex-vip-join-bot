@@ -6,19 +6,20 @@ from locales import get_text
 import re
 
 DEFAULTS = {
-    "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE,
+    "affiliate_link_base": env_settings.AFFILIATE_LINK_BASE
+    or "https://broker-qx.pro/sign-up/?lid=1480996",
     "site_id": env_settings.SITE_ID,
     "min_deposit": "0",
     "vip_group_link": env_settings.VIP_GROUP_LINK or "",
-    "btn_premium": "🎁 VIP জয়েন",
-    "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
-    "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
-    "btn_public": "🔗 পাবলিক চ্যানেল",
-    "btn_status": "📊 স্ট্যাটাস",
-    "btn_support": "📢 সাপোর্ট",
-    "btn_register": "📝 রেজিস্টার",
-    "btn_back": "⬅️ ফিরে যান",
-    "btn_settings": "⚙️ সেটিংস",
+    "btn_premium": "VIP জয়েন",
+    "btn_create_account": "নতুন অ্যাকাউন্ট",
+    "btn_delete_account": "অ্যাকাউন্ট ডিলিট",
+    "btn_public": "পাবলিক চ্যানেল",
+    "btn_status": "স্ট্যাটাস",
+    "btn_support": "সাপোর্ট",
+    "btn_register": "রেজিস্টার",
+    "btn_back": "ফিরে যান",
+    "btn_settings": "সেটিংস",
     "public_channel": "https://t.me/+gLV8BLij6PAxYjE1",
     "support_text": "কোনো সমস্যা হলে অ্যাডমিন: @TEADMIN9",
     "support_text_bn": "কোনো সমস্যা হলে অ্যাডমিন: @TEADMIN9",
@@ -75,7 +76,6 @@ async def get_min_deposit() -> float:
 
 
 async def get_vip_group_link() -> str:
-    """Static VIP invite link — same for all verified users."""
     link = await get_setting("vip_group_link", "")
     if link:
         return link.strip()
@@ -114,16 +114,14 @@ async def get_support_text(lang: str) -> str:
 
 
 async def get_affiliate_url(click_id: str = "") -> str:
-    """
-    সবার জন্য একই স্ট্যাটিক partner/register লিংক।
-    click_id দিয়ে আলাদা URL বানায় না।
-    """
+    """সবার জন্য একই স্ট্যাটিক partner লিংক (click_id ব্যবহার হয় না)।"""
     base = (await get_setting("affiliate_link_base") or "").strip()
+    if not base:
+        base = DEFAULTS["affiliate_link_base"]
     site_id = (await get_setting("site_id") or "1").strip()
 
-    # Remove personal click_id placeholders / query params
     base = base.replace("{click_id}", "").replace("{CLICK_ID}", "")
-    base = re.sub(r"([?&])click_id=[^&]*", r"\1", base)
+    base = re.sub(r"([?&])click_id=[^&]*", r"\1", base, flags=re.I)
     base = re.sub(r"[?&]$", "", base)
     base = base.replace("?&", "?").replace("&&", "&")
 
@@ -133,6 +131,4 @@ async def get_affiliate_url(click_id: str = "") -> str:
         except Exception:
             base = base.replace("{site_id}", site_id)
 
-    # Clean trailing ? or &
-    base = base.rstrip("?&")
-    return base
+    return base.rstrip("?&")
