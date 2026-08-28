@@ -96,13 +96,24 @@ TEXTS = {
     ),
     "waiting_deposit": "⏳ Waiting for your deposit...",
     "already_verified": "✅ You are already verified!",
+
     "invite_ready": (
-        "🎉 <b>Congratulations!</b>\n\n"
-        "Your account has been verified.\n"
-        "Join the VIP group:\n\n"
-        "{link}\n\n"
-        "✅ Click the link to join."
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "<b>Verification successful!</b> "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        "Your Trader ID:\n"
+        "<code>{trader_id}</code>\n\n"
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "Join the VIP group: "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n'
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        '<a href="{link}">Click here to join the VIP group</a>\n\n'
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
+        "Enjoy VIP benefits!\n"
+        '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji> '
+        "Questions? Contact: @SK_SupportOfficial"
     ),
+
     "already_joined": "✅ You have already joined the VIP group.",
     "status_title": "📊 <b>Your Account Status</b>\n\n",
     "status_not_verified": "❌ Not verified yet. Register with our link and deposit first.",
