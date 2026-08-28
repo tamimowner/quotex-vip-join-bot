@@ -30,7 +30,8 @@ TEXTS = {
     "btn_support": "📢 Support",
     "btn_status": "📊 Status",
     "btn_back": "⬅️ Back",
-    "btn_tutorial": "📘 Tutorial",
+    "btn_tutorial": "Watch Tutorial",
+    "btn_open_account": "Open Quotex Account",
     "btn_register": "📝 Register & Deposit",
     "btn_settings": "⚙️ Settings",
     "btn_change_language": "🌐 Change Language",
@@ -60,15 +61,22 @@ TEXTS = {
         "Please deposit more, then send Trader ID or wait."
     ),
     "not_from_our_link": (
-        "❌ <b>Account was not created with our Affiliate Link</b>\n\n"
-        "Trader ID: <code>{trader_id}</code>\n\n"
-        "You did not open the account via our link, or it is not in our system yet.\n\n"
-        "✅ What to do:\n"
-        "1️⃣ Click the button and create a <b>new</b> account\n"
-        "2️⃣ Verify your account\n"
-        "3️⃣ Make the minimum deposit (if required)\n"
-        "4️⃣ Send your Trader ID again\n\n"
-        "⚠️ Old accounts or other partners' links are not accepted."
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "<b>Verification failed!</b>\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "Trader ID <code>{trader_id}</code> was not created with our Affiliate Link."
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="6300891304414938793">»</tg-emoji> '
+        "Please delete the old account and create a new one using the Affiliate Link below."
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="6214983170991853422">🔗</tg-emoji> '
+        "Account Create URL :- {register_url}\n\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Verify your Account\n'
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Complete the first Deposit\n'
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "Then send your new 8-digit Trader ID again\n\n"
+        "Thank you. "
+        '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
     ),
     "need_deposit_hint": (
         "⏳ Not verified yet.\n\n"
