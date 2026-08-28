@@ -15,18 +15,18 @@ def normalize_database_url(url: str) -> str:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     BOT_TOKEN: str
     ADMIN_IDS: str = ""
     VIP_GROUP_ID: int = 0
 
-    # Static VIP group invite link (same for everyone — PHP style)
     VIP_GROUP_LINK: str = ""
 
-    AFFILIATE_LINK_BASE: str = (
-        "https://broker-qx.pro/sign-up/?lid=1480996&click_id={click_id}&site_id={site_id}"
-    )
+    # Static partner link — same for all users (trader_id matching)
+    AFFILIATE_LINK_BASE: str = "https://broker-qx.pro/sign-up/?lid=1480996"
     SITE_ID: str = "1"
 
     DATABASE_URL: str
@@ -48,14 +48,12 @@ class Settings(BaseSettings):
         return normalize_database_url(self.DATABASE_URL)
 
 
-# Build settings; fail with clear message
 try:
     settings = Settings()
-    # Prefer Railway-injected PORT
     if os.getenv("PORT"):
         object.__setattr__(settings, "PORT", int(os.getenv("PORT")))
 except Exception as e:
     print("ERROR: Missing or invalid environment variables:", e)
     print("Required: BOT_TOKEN, DATABASE_URL")
-    print("Recommended: VIP_GROUP_LINK, VIP_GROUP_ID, ADMIN_IDS, AFFILIATE_LINK_BASE")
+    print("Recommended: VIP_GROUP_LINK, VIP_GROUP_ID, ADMIN_IDS")
     raise
