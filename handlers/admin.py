@@ -32,6 +32,8 @@ BUTTON_MAP = [
     ("btn_status", "স্ট্যাটাস বাটন"),
     ("btn_support", "সাপোর্ট বাটন"),
     ("btn_register", "রেজিস্টার বাটন"),
+    ("btn_open_account", "Quotex Account খুলুন বাটন"),
+    ("btn_tutorial", "Tutorial বাটন"),
     ("btn_back", "ফিরে যান বাটন"),
     ("btn_settings", "সেটিংস বাটন"),
 ]
@@ -53,6 +55,7 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="মিনিমাম ডিপোজিট", callback_data="adm:mindep")],
             [InlineKeyboardButton(text="পার্টনার লিংক", callback_data="adm:link")],
             [InlineKeyboardButton(text="VIP ইনভাইট লিংক", callback_data="adm:vip")],
+            [InlineKeyboardButton(text="Tutorial (YouTube)", callback_data="adm:tutorial")],
             [InlineKeyboardButton(text="ওয়েলকাম ফটো", callback_data="adm:photo")],
             [InlineKeyboardButton(text="বাটন টেক্সট", callback_data="adm:btns")],
             [InlineKeyboardButton(text="বাটন কালার", callback_data="adm:styles")],
@@ -169,6 +172,23 @@ async def adm_vip(callback: CallbackQuery):
     _pending[callback.from_user.id] = "vip_group_link"
     await callback.message.edit_text(
         f"VIP invite:\n<code>{current or 'সেট নেই'}</code>\n\nনতুন লিংক পাঠান:",
+        parse_mode="HTML",
+        reply_markup=back_kb(),
+        disable_web_page_preview=True,
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "adm:tutorial")
+async def adm_tutorial(callback: CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        return
+    current = await get_setting("tutorial_url", "")
+    _pending[callback.from_user.id] = "tutorial_url"
+    await callback.message.edit_text(
+        f"Tutorial / YouTube লিংক:\n<code>{current or 'সেট নেই'}</code>\n\n"
+        "নতুন YouTube URL পাঠান:\n"
+        "উদাহরণ: <code>https://youtu.be/xxxxx</code>",
         parse_mode="HTML",
         reply_markup=back_kb(),
         disable_web_page_preview=True,
@@ -517,6 +537,20 @@ async def admin_text_input(message: Message):
             return
         _pending[uid] = key
         await message.answer("URL বা ছবি পাঠান")
+        return
+
+    if key == "tutorial_url":
+        if not value.startswith("http"):
+            _pending[uid] = key
+            await message.answer("পূর্ণ URL পাঠান (https://...)")
+            return
+        await set_setting("tutorial_url", value)
+        await message.answer(
+            f"Tutorial সেভ:\n<code>{value}</code>",
+            reply_markup=admin_menu_kb(),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
         return
 
     if key.startswith("icon_"):
