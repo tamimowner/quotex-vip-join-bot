@@ -5,7 +5,8 @@ from datetime import datetime
 from sqlalchemy import select
 from database.models import User, PostbackLog
 from database.db import async_session
-from services.settings_store import get_min_deposit, get_vip_group_link, get_setting
+from services.settings_store import get_min_deposit, get_vip_group_link
+from services.messages import get_message_text
 from locales import get_text
 from config import settings
 from aiogram import Bot
@@ -14,20 +15,6 @@ import traceback
 
 app = FastAPI(title="Quotex VIP Postback")
 bot = Bot(token=settings.BOT_TOKEN)
-
-
-async def get_message_text(lang: str, key: str, **kwargs) -> str:
-    lang = (lang or "bn").lower()
-    if lang not in ("bn", "en"):
-        lang = "bn"
-    custom = await get_setting(f"msg_{key}_{lang}", "")
-    text = custom if custom else get_text(lang, key)
-    if kwargs:
-        try:
-            return text.format(**kwargs)
-        except Exception:
-            return text
-    return text
 
 
 def _pick(params: dict, *keys: str) -> str:
@@ -106,7 +93,6 @@ async def health():
 @app.api_route("/callback", methods=["GET", "POST", "HEAD"])
 @app.api_route("/postback.php", methods=["GET", "POST", "HEAD"])
 async def postback(request: Request):
-    """Always HTTP 200 OK so Quotex does not fail the postback."""
     if request.method == "HEAD":
         return PlainTextResponse("OK", status_code=200)
 
