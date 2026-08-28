@@ -1,20 +1,18 @@
 """
-Web Admin Panel API.
-Auth:
-  1) Telegram WebApp initData (preferred)
-  2) Manual Telegram admin ID login (ADMIN_IDS)
-  3) Optional ADMIN_WEB_TOKEN fallback
+Web Admin Panel — normal website login (username + password).
+Env:
+  ADMIN_USERNAME (default: admin)
+  ADMIN_PASSWORD (required for security; fallback ADMIN_WEB_TOKEN)
 """
 from __future__ import annotations
 
 import hashlib
 import hmac
-import json
 import os
+import secrets
 import time
 from datetime import datetime
 from typing import Any
-from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -81,100 +79,67 @@ SETTING_KEYS = [
 SESSION_TTL = 7 * 24 * 3600
 
 
+def _admin_username() -> str:
+    return (os.getenv("ADMIN_USERNAME") or "admin").strip()
+
+
+def _admin_password() -> str:
+    return (
+        (os.getenv("ADMIN_PASSWORD") or "").strip()
+        or (os.getenv("ADMIN_WEB_TOKEN") or "").strip()
+        or (os.getenv("POSTBACK_SECRET") or "").strip()
+    )
+
+
 def _session_secret() -> bytes:
-    raw = (settings.BOT_TOKEN or "") + "|admin-session"
+    raw = (settings.BOT_TOKEN or "") + "|" + _admin_password() + "|admin-web"
     return hashlib.sha256(raw.encode()).digest()
 
 
-def _make_session(user_id: int) -> str:
+def _make_session(username: str) -> str:
     exp = int(time.time()) + SESSION_TTL
-    payload = f"{user_id}:{exp}"
-    sig = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    nonce = secrets.token_hex(8)
+    payload = f"{username}:{exp}:{nonce}"
+    sig = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:40]
     return f"{payload}:{sig}"
 
 
-def _verify_session(session: str | None) -> int | None:
-    if not session or session.count(":") != 2:
+def _verify_session(session: str | None) -> str | None:
+    if not session:
         return None
-    uid_s, exp_s, sig = session.split(":", 2)
+    parts = session.split(":")
+    if len(parts) != 4:
+        return None
+    username, exp_s, nonce, sig = parts
     try:
-        uid = int(uid_s)
         exp = int(exp_s)
     except ValueError:
         return None
     if exp < int(time.time()):
         return None
-    payload = f"{uid}:{exp}"
-    expect = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    payload = f"{username}:{exp}:{nonce}"
+    expect = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:40]
     if not hmac.compare_digest(expect, sig):
         return None
-    if uid not in settings.admin_ids:
+    if not hmac.compare_digest(username, _admin_username()):
         return None
-    return uid
-
-
-def _validate_webapp_init_data(init_data: str) -> dict[str, Any] | None:
-    if not init_data or not settings.BOT_TOKEN:
-        return None
-    try:
-        pairs = dict(parse_qsl(init_data, keep_blank_values=True))
-    except Exception:
-        return None
-    received_hash = pairs.pop("hash", None)
-    if not received_hash:
-        return None
-    data_check = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
-    secret_key = hmac.new(b"WebAppData", settings.BOT_TOKEN.encode(), hashlib.sha256).digest()
-    calc = hmac.new(secret_key, data_check.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calc, received_hash):
-        return None
-    try:
-        auth_date = int(pairs.get("auth_date") or 0)
-        if auth_date and abs(time.time() - auth_date) > 86400:
-            return None
-    except ValueError:
-        pass
-    user_raw = pairs.get("user")
-    if not user_raw:
-        return None
-    try:
-        return json.loads(user_raw)
-    except Exception:
-        return None
-
-
-def _legacy_token() -> str:
-    return os.getenv("ADMIN_WEB_TOKEN", "") or os.getenv("POSTBACK_SECRET", "") or ""
+    return username
 
 
 async def require_admin(
     request: Request,
     x_admin_session: str | None = Header(default=None, alias="X-Admin-Session"),
-    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
-    token: str | None = Query(default=None),
 ):
     sess = x_admin_session or request.cookies.get("admin_session")
-    uid = _verify_session(sess)
-    if uid is not None:
-        return uid
-
-    expected = _legacy_token()
-    got = x_admin_token or token or request.cookies.get("admin_token")
-    if expected and got and hmac.compare_digest(str(got), str(expected)):
-        return 0
-
-    raise HTTPException(
-        status_code=401,
-        detail="Unauthorized — login with Admin Telegram ID",
-    )
+    user = _verify_session(sess)
+    if user:
+        return user
+    raise HTTPException(status_code=401, detail="Unauthorized — login required")
 
 
-class TgAuthBody(BaseModel):
-    init_data: str
-
-
-class IdAuthBody(BaseModel):
-    telegram_id: int
+class LoginBody(BaseModel):
+    username: str
+    password: str
 
 
 class SettingBody(BaseModel):
@@ -209,61 +174,44 @@ async def admin_page():
         return HTMLResponse(f.read())
 
 
-@router.post("/api/auth/telegram")
-async def api_auth_telegram(body: TgAuthBody):
-    user = _validate_webapp_init_data(body.init_data or "")
-    if not user:
-        raise HTTPException(401, "Invalid Telegram initData")
-    try:
-        uid = int(user.get("id") or 0)
-    except (TypeError, ValueError):
-        raise HTTPException(401, "Invalid user")
-    if uid not in settings.admin_ids:
-        raise HTTPException(403, f"Not an admin (id={uid}). Set ADMIN_IDS.")
-    session = _make_session(uid)
+@router.post("/api/auth/login")
+async def api_auth_login(body: LoginBody):
+    expected_user = _admin_username()
+    expected_pass = _admin_password()
+    if not expected_pass:
+        raise HTTPException(
+            500,
+            "ADMIN_PASSWORD not set on server. Set ADMIN_PASSWORD in Railway env.",
+        )
+    ok_user = hmac.compare_digest((body.username or "").strip(), expected_user)
+    ok_pass = hmac.compare_digest((body.password or "").strip(), expected_pass)
+    if not (ok_user and ok_pass):
+        raise HTTPException(401, "Wrong username or password")
+    session = _make_session(expected_user)
     return {
         "ok": True,
         "session": session,
-        "user": {
-            "id": uid,
-            "username": user.get("username"),
-            "first_name": user.get("first_name"),
-            "last_name": user.get("last_name"),
-        },
+        "user": {"username": expected_user},
     }
 
 
-@router.post("/api/auth/id")
-async def api_auth_id(body: IdAuthBody):
-    """Login with numeric Telegram ID if it is in ADMIN_IDS."""
-    try:
-        uid = int(body.telegram_id)
-    except (TypeError, ValueError):
-        raise HTTPException(400, "Invalid telegram_id")
-    if not settings.admin_ids:
-        raise HTTPException(500, "ADMIN_IDS not configured on server")
-    if uid not in settings.admin_ids:
-        raise HTTPException(403, f"Not an admin (id={uid}). Add to ADMIN_IDS.")
-    session = _make_session(uid)
-    return {
-        "ok": True,
-        "session": session,
-        "user": {"id": uid, "first_name": "Admin"},
-    }
+@router.post("/api/auth/logout")
+async def api_auth_logout():
+    return {"ok": True}
 
 
 @router.get("/api/ping")
-async def api_ping(admin_id: int = Depends(require_admin)):
+async def api_ping(admin: str = Depends(require_admin)):
     return {
         "ok": True,
         "service": "admin",
-        "admin_id": admin_id,
+        "user": admin,
         "time": datetime.utcnow().isoformat(),
     }
 
 
 @router.get("/api/settings")
-async def api_get_settings(_: int = Depends(require_admin)):
+async def api_get_settings(_: str = Depends(require_admin)):
     data: dict[str, Any] = {}
     for k in SETTING_KEYS:
         data[k] = await get_setting(k, DEFAULTS.get(k, ""))
@@ -281,7 +229,7 @@ async def api_get_settings(_: int = Depends(require_admin)):
 
 
 @router.post("/api/settings")
-async def api_set_setting(body: SettingBody, _: int = Depends(require_admin)):
+async def api_set_setting(body: SettingBody, _: str = Depends(require_admin)):
     key = body.key.strip()
     if not key:
         raise HTTPException(400, "key required")
@@ -290,14 +238,14 @@ async def api_set_setting(body: SettingBody, _: int = Depends(require_admin)):
 
 
 @router.post("/api/settings/bulk")
-async def api_bulk_settings(body: BulkSettingsBody, _: int = Depends(require_admin)):
+async def api_bulk_settings(body: BulkSettingsBody, _: str = Depends(require_admin)):
     for k, v in body.items.items():
         await set_setting(str(k).strip(), str(v))
     return {"ok": True, "count": len(body.items)}
 
 
 @router.get("/api/messages")
-async def api_get_messages(_: int = Depends(require_admin)):
+async def api_get_messages(_: str = Depends(require_admin)):
     out = {}
     for key in MESSAGE_KEYS:
         for lang, defaults in (("bn", BN_TEXTS), ("en", EN_TEXTS)):
@@ -310,7 +258,7 @@ async def api_get_messages(_: int = Depends(require_admin)):
 
 
 @router.post("/api/messages")
-async def api_set_message(body: MessageBody, _: int = Depends(require_admin)):
+async def api_set_message(body: MessageBody, _: str = Depends(require_admin)):
     lang = body.lang.lower()
     if lang not in ("bn", "en"):
         raise HTTPException(400, "lang must be bn or en")
@@ -321,7 +269,7 @@ async def api_set_message(body: MessageBody, _: int = Depends(require_admin)):
 
 
 @router.get("/api/stats")
-async def api_stats(_: int = Depends(require_admin)):
+async def api_stats(_: str = Depends(require_admin)):
     async with async_session() as session:
         total = await session.scalar(select(func.count()).select_from(User)) or 0
         verified = await session.scalar(
@@ -347,7 +295,7 @@ async def api_stats(_: int = Depends(require_admin)):
 @router.get("/api/users")
 async def api_users(
     limit: int = Query(30, ge=1, le=100),
-    _: int = Depends(require_admin),
+    _: str = Depends(require_admin),
 ):
     async with async_session() as session:
         result = await session.execute(
@@ -377,7 +325,7 @@ async def api_users(
 @router.get("/api/postbacks")
 async def api_postbacks(
     limit: int = Query(50, ge=1, le=200),
-    _: int = Depends(require_admin),
+    _: str = Depends(require_admin),
 ):
     async with async_session() as session:
         result = await session.execute(
@@ -419,7 +367,7 @@ def _e(name: str, premium: bool) -> str:
 
 
 @router.post("/api/ai/caption")
-async def api_ai_caption(body: CaptionRequest, _: int = Depends(require_admin)):
+async def api_ai_caption(body: CaptionRequest, _: str = Depends(require_admin)):
     topic = (body.topic or "VIP").strip()
     lang = body.lang if body.lang in ("bn", "en") else "bn"
     prem = body.include_tg_emoji
