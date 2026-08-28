@@ -50,10 +50,20 @@ TEXTS = {
         "✅ Trader ID সেভ হয়েছে: <code>{trader_id}</code>"
     ),
     "account_created_success": (
-        "✅ <b>সফল!</b> আমাদের Affiliate Link থেকে অ্যাকাউন্ট পাওয়া গেছে।\n\n"
-        "🆔 Trader ID: <code>{trader_id}</code>\n\n"
-        "এখন ন্যূনতম <b>${min_deposit}</b> Deposit করুন (যদি লাগে)।\n"
-        "ডিপোজিট/রেজিস্ট্রেশন মিললে VIP গ্রুপের লিংক পাবেন।"
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "আপনার একাউন্ট সঠিক ভাবে তৈরি হয়েছে "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        "🆔 Trader ID: <code>{trader_id}</code>"
+    ),
+    "account_ok_need_deposit": (
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "আপনার একাউন্ট সঠিক ভাবে তৈরি হয়েছে "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "আপনার একাউন্ট এ এখনো ডিপোজিট করা হয় নি\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "এখন আপনি আপনার একাউন্টে <b>${min_deposit}</b> ডিপোজিট করে আবার বট এ ট্রেডার আইডি সেন্ড করুন তাহলে আপনাকে VIP গ্রুপ এর লিংক দেওয়া হবে "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
     "deposit_received_need_more": (
         "💰 ডিপোজিট পেয়েছি: <b>${amount:.2f}</b>\n"
@@ -79,9 +89,11 @@ TEXTS = {
         '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
     ),
     "need_deposit_hint": (
-        "⏳ এখনো ভেরিফাই হয়নি।\n\n"
-        "ন্যূনতম <b>${min_deposit}</b> Deposit করুন।\n"
-        "ডিপোজিট + Trader ID মিললে VIP লিংক পাবেন।"
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "আপনার একাউন্ট এ এখনো ডিপোজিট করা হয় নি\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "এখন আপনি আপনার একাউন্টে <b>${min_deposit}</b> ডিপোজিট করে আবার বট এ ট্রেডার আইডি সেন্ড করুন তাহলে আপনাকে VIP গ্রুপ এর লিংক দেওয়া হবে "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
 
     "premium_info": (
