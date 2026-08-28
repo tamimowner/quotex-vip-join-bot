@@ -51,9 +51,10 @@
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .emoji-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   .emoji-bar button { background: #1e293b; border: 1px solid var(--border); padding: 6px 10px; font-size: 1.1rem; }
-  .gate { padding: 32px 18px; text-align: center; }
-  .gate h2 { margin: 0 0 12px; }
-  .gate code { background: #1e293b; padding: 2px 6px; border-radius: 4px; }
+  .gate { padding: 28px 18px; max-width: 420px; margin: 40px auto; text-align: center; }
+  .gate h2 { margin: 0 0 8px; }
+  .gate .login-box { text-align: left; margin-top: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .gate input { width: 100%; font-size: 1.05rem; }
   .raw { font-size: 0.7rem; color: var(--muted); max-width: 220px; word-break: break-all; }
 </style>
 </head>
@@ -61,18 +62,24 @@
 <header>
   <div>
     <h1>VIP Bot - Web Admin</h1>
-    <div id="authStatus">Checking Telegram...</div>
+    <div id="authStatus">Loading...</div>
   </div>
   <div class="row">
-    <button type="button" id="btnAuth" class="secondary">Login</button>
     <button type="button" id="btnLoad" class="secondary">Reload</button>
   </div>
 </header>
 
 <div id="gate" class="gate hidden">
-  <h2>Admin login</h2>
-  <p class="muted" id="gateMsg">Open from bot: /admin - Web App</p>
-  <button type="button" id="btnRetry" style="margin-top:16px">Try again</button>
+  <h2>Admin Login</h2>
+  <p class="muted" id="gateMsg">Telegram Admin ID দিয়ে লগইন করুন</p>
+  <div class="login-box">
+    <div class="field">
+      <label>Telegram Admin ID (numeric)</label>
+      <input id="adminIdInput" type="number" inputmode="numeric" placeholder="উদাহরণ: 123456789" />
+    </div>
+    <button type="button" class="ok" id="btnIdLogin" style="width:100%;margin-top:8px">Login</button>
+    <p class="muted" style="margin:12px 0 0;font-size:0.8rem">Railway এ <code>ADMIN_IDS</code> এ যে ID আছে শুধু সেটাই কাজ করবে। @userinfobot থেকে ID নিন।</p>
+  </div>
 </div>
 
 <div id="app" class="hidden">
@@ -192,7 +199,7 @@ function toast(msg) {
 }
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-async function fetchJson(url, opts = {}, timeoutMs = 12000) {
+async function fetchJson(url, opts = {}, timeoutMs = 15000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -220,10 +227,10 @@ function getInitData() {
   try { tg.ready(); tg.expand(); } catch (_) {}
   return (tg.initData || "").trim();
 }
-async function waitInitData(maxMs = 2500) {
+async function waitInitData(maxMs = 1500) {
   const start = Date.now();
   let data = getInitData();
-  while (!data && Date.now() - start < maxMs) { await sleep(200); data = getInitData(); }
+  while (!data && Date.now() - start < maxMs) { await sleep(150); data = getInitData(); }
   return data;
 }
 
@@ -414,55 +421,92 @@ function showApp(statusText) {
   $("app").classList.remove("hidden");
 }
 function showGate(msg) {
-  $("authStatus").textContent = msg;
+  $("authStatus").textContent = msg || "Login required";
   $("authStatus").className = "err";
-  $("gateMsg").textContent = msg;
+  if (msg) $("gateMsg").textContent = msg;
   $("gate").classList.remove("hidden");
   $("app").classList.add("hidden");
 }
 
-async function authTelegram() {
-  $("authStatus").textContent = "Checking Telegram...";
-  $("authStatus").className = "";
-  const initData = await waitInitData(3000);
-  const tg = getTg();
-  if (!initData) {
-    if (sessionKey) {
-      try {
-        await api("/api/ping");
-        showApp("Session OK");
-        await loadAll();
-        return;
-      } catch (e) {
-        localStorage.removeItem("admin_session");
-        sessionKey = "";
-      }
-    }
-    showGate(!tg ? "Open from bot /admin Web App" : "initData empty - use Web App button");
+async function loginWithId() {
+  const raw = ($("adminIdInput").value || "").trim();
+  if (!raw) {
+    alert("Telegram Admin ID লিখুন");
+    return;
+  }
+  const tid = parseInt(raw, 10);
+  if (!tid || tid < 1) {
+    alert("সঠিক numeric ID দিন");
     return;
   }
   try {
-    $("authStatus").textContent = "Verifying admin...";
-    const { res, data } = await fetchJson("/admin/api/auth/telegram", {
+    $("authStatus").textContent = "Logging in...";
+    const { res, data } = await fetchJson("/admin/api/auth/id", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: initData }),
+      body: JSON.stringify({ telegram_id: tid }),
     });
     if (!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
     sessionKey = data.session;
     localStorage.setItem("admin_session", sessionKey);
-    const u = data.user || {};
-    showApp("OK " + (u.first_name || "Admin") + " (" + u.id + ")");
+    localStorage.setItem("admin_id_saved", String(tid));
+    showApp("Admin " + tid);
     await loadAll();
   } catch (e) {
-    showGate((e && e.name === "AbortError") ? "Server timeout" : (e.message || "Auth failed"));
+    showGate(e.message || "Login failed");
+    alert(e.message || "Login failed");
   }
 }
 
+async function boot() {
+  $("authStatus").textContent = "Checking...";
+  const savedId = localStorage.getItem("admin_id_saved") || "";
+  if (savedId) $("adminIdInput").value = savedId;
+
+  // 1) existing session
+  if (sessionKey) {
+    try {
+      await api("/api/ping");
+      showApp("Session OK");
+      await loadAll();
+      return;
+    } catch (_) {
+      localStorage.removeItem("admin_session");
+      sessionKey = "";
+    }
+  }
+
+  // 2) Telegram WebApp auto login
+  const initData = await waitInitData(1200);
+  if (initData) {
+    try {
+      const { res, data } = await fetchJson("/admin/api/auth/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: initData }),
+      });
+      if (res.ok && data.session) {
+        sessionKey = data.session;
+        localStorage.setItem("admin_session", sessionKey);
+        const u = data.user || {};
+        showApp("OK " + (u.first_name || "Admin") + " (" + u.id + ")");
+        await loadAll();
+        return;
+      }
+    } catch (_) {}
+  }
+
+  // 3) show login form
+  showGate("Admin Telegram ID দিয়ে লগইন করুন");
+}
+
+$("btnIdLogin").onclick = () => loginWithId();
+$("adminIdInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") loginWithId();
+});
 $("btnLoad").onclick = () => loadAll().catch((e) => alert(e.message));
-$("btnAuth").onclick = () => authTelegram();
-$("btnRetry").onclick = () => authTelegram();
-authTelegram();
+
+boot();
 </script>
 </body>
 </html>
