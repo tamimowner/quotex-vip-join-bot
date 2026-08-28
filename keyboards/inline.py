@@ -102,6 +102,7 @@ async def settings_language_keyboard(lang: str) -> InlineKeyboardMarkup:
 
 
 async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup:
+    """Default register + back (premium flow)."""
     btn_register = await get_button_text("btn_register", lang)
     btn_back = await get_button_text("btn_back", lang)
     style_reg = await get_setting("style_btn_register", "success")
@@ -112,6 +113,33 @@ async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup
         [await _btn(btn_register, url=register_url, style=style_reg, icon_custom_emoji_id=icon_reg or None)],
         [await _btn(btn_back, callback_data="menu:back", style=style_back, icon_custom_emoji_id=icon_back or None)],
     ])
+
+
+async def verify_fail_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup:
+    """
+    When trader_id is not from our affiliate link:
+    1) Open Quotex Account (partner link)
+    2) Tutorial (YouTube / admin-set URL)
+    """
+    open_text = await get_button_text("btn_open_account", lang)
+    if not open_text or open_text == "btn_open_account":
+        open_text = get_text(lang, "btn_open_account")
+
+    tut_text = await get_button_text("btn_tutorial", lang)
+    if not tut_text or tut_text == "btn_tutorial":
+        tut_text = get_text(lang, "btn_tutorial")
+
+    tutorial_url = (await get_setting("tutorial_url", "") or "").strip()
+    if not tutorial_url:
+        tutorial_url = "https://www.youtube.com"
+
+    rows = [
+        [await _btn(open_text, url=register_url, style="success")],
+    ]
+    if tutorial_url.startswith("http"):
+        rows.append([await _btn(tut_text, url=tutorial_url, style="primary")])
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 async def back_keyboard(lang: str) -> InlineKeyboardMarkup:
