@@ -1,28 +1,33 @@
+"""Quotex Partner postback receiver only (no web admin panel)."""
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from sqlalchemy import select
 from database.models import User, PostbackLog
 from database.db import async_session
-from services.settings_store import get_min_deposit, get_vip_group_link
+from services.settings_store import get_min_deposit, get_vip_group_link, get_setting
 from locales import get_text
 from config import settings
 from aiogram import Bot
 import json
-import os
 import traceback
 
-from admin_web import router as admin_router, get_message_text
-
-app = FastAPI(title="Quotex Postback + Admin")
+app = FastAPI(title="Quotex VIP Postback")
 bot = Bot(token=settings.BOT_TOKEN)
 
-app.include_router(admin_router)
 
-_static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.isdir(_static_dir):
-    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+async def get_message_text(lang: str, key: str, **kwargs) -> str:
+    lang = (lang or "bn").lower()
+    if lang not in ("bn", "en"):
+        lang = "bn"
+    custom = await get_setting(f"msg_{key}_{lang}", "")
+    text = custom if custom else get_text(lang, key)
+    if kwargs:
+        try:
+            return text.format(**kwargs)
+        except Exception:
+            return text
+    return text
 
 
 def _pick(params: dict, *keys: str) -> str:
@@ -45,6 +50,9 @@ def _pick(params: dict, *keys: str) -> str:
             "{uid}",
             "{cid}",
             "{eid}",
+            "{lid}",
+            "{site_id}",
+            "{sid}",
         ):
             return s
     return ""
@@ -52,11 +60,8 @@ def _pick(params: dict, *keys: str) -> str:
 
 async def _read_params(request: Request) -> dict:
     params: dict = {}
-    # Always include query string
     params.update(dict(request.query_params))
-
     if request.method == "POST":
-        # Try JSON
         try:
             body = await request.json()
             if isinstance(body, dict):
@@ -64,13 +69,11 @@ async def _read_params(request: Request) -> dict:
                 return params
         except Exception:
             pass
-        # Try form
         try:
             form = await request.form()
             params.update({k: str(v) for k, v in dict(form).items()})
         except Exception:
             pass
-        # Try raw body as querystring-like
         try:
             raw = await request.body()
             if raw:
@@ -91,9 +94,9 @@ async def health():
         {
             "status": "ok",
             "service": "quotex-vip-join-bot",
-            "admin": "/admin",
             "postback": "/postback",
-            "test": "/postback?status=test&uid=999&sumdep=0",
+            "admin": "Telegram /admin command only",
+            "test": "/postback?status=reg&uid=TEST999&sumdep=0",
         }
     )
 
@@ -103,10 +106,7 @@ async def health():
 @app.api_route("/callback", methods=["GET", "POST", "HEAD"])
 @app.api_route("/postback.php", methods=["GET", "POST", "HEAD"])
 async def postback(request: Request):
-    """
-    Quotex Partner postback receiver.
-    Always returns HTTP 200 OK so the partner does not retry/fail.
-    """
+    """Always HTTP 200 OK so Quotex does not fail the postback."""
     if request.method == "HEAD":
         return PlainTextResponse("OK", status_code=200)
 
@@ -116,9 +116,9 @@ async def postback(request: Request):
         print(f"POSTBACK param read error: {e}")
         params = dict(request.query_params)
 
-    status = _pick(params, "status", "{status}", "event", "type", "action").lower()
+    status = _pick(params, "status", "event", "type", "action").lower()
     click_id = _pick(
-        params, "cid", "click_id", "clickid", "{click_id}", "subid", "sub_id", "s1", "click"
+        params, "cid", "click_id", "clickid", "subid", "sub_id", "s1", "click"
     )
     trader_id = _pick(
         params,
@@ -128,18 +128,18 @@ async def postback(request: Request):
         "traderId",
         "user_id",
         "userid",
-        "{trader_id}",
         "account_id",
         "accountid",
         "trader",
     )
-    event_id = _pick(params, "eid", "event_id", "eventid", "{event_id}", "id")
-    country = _pick(params, "country", "{country}", "geo", "cc")
+    event_id = _pick(params, "eid", "event_id", "eventid", "id")
+    country = _pick(params, "country", "geo", "cc")
+    lid = _pick(params, "lid", "link_id")
 
     raw_sumdep = _pick(
-        params, "sumdep", "{sumdep}", "deposit", "amount", "sum", "dep", "profit", "value"
+        params, "sumdep", "deposit", "amount", "sum", "dep", "profit", "value"
     )
-    raw_sumwd = _pick(params, "sumwithdraw", "{sumwithdraw}", "withdraw", "withdrawal")
+    raw_sumwd = _pick(params, "sumwithdraw", "withdraw", "withdrawal")
     try:
         sumdep = float(raw_sumdep or 0)
     except (TypeError, ValueError):
@@ -150,10 +150,9 @@ async def postback(request: Request):
         sumwithdraw = 0.0
 
     print(
-        f"POSTBACK hit method={request.method} "
-        f"status={status!r} cid={click_id!r} uid={trader_id!r} "
-        f"sumdep={sumdep} country={country!r} keys={list(params.keys())} "
-        f"ua={request.headers.get('user-agent', '')[:80]}"
+        f"POSTBACK hit method={request.method} status={status!r} "
+        f"cid={click_id!r} uid={trader_id!r} lid={lid!r} sumdep={sumdep} "
+        f"keys={list(params.keys())}"
     )
 
     try:
@@ -195,6 +194,10 @@ async def postback(request: Request):
                 user = result.scalar_one_or_none()
 
             if not user:
+                print(
+                    f"POSTBACK saved log only (no user match) "
+                    f"uid={trader_id!r} cid={click_id!r}"
+                )
                 return PlainTextResponse("OK", status_code=200)
 
             had_trader = bool(user.trader_id)
@@ -220,6 +223,9 @@ async def postback(request: Request):
                 "register",
                 "signup",
                 "sign_up",
+                "email",
+                "email_confirm",
+                "email_confirmation",
             ) and bool(trader_id)
             deposit_ok = total_now >= min_dep
 
