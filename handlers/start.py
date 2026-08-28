@@ -225,16 +225,22 @@ async def receive_trader_id(message: Message, bot: Bot):
             user.verified_at = datetime.utcnow()
             await session.commit()
 
-        vip_link = await get_vip_group_link()
+        # Prefer unique 1-use invite; falls back to admin static VIP link
+        vip_link = await create_unique_invite(bot, tg_id)
         if not vip_link:
-            vip_link = await create_unique_invite(bot, tg_id)
+            vip_link = await get_vip_group_link()
 
         if vip_link:
             user.invite_link = vip_link
             await session.commit()
 
             await message.answer(
-                await get_message_text(lang, "invite_ready", link=vip_link),
+                await get_message_text(
+                    lang,
+                    "invite_ready",
+                    link=vip_link,
+                    trader_id=trader_id,
+                ),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
                 reply_markup=await main_menu(lang),
