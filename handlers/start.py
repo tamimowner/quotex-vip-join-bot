@@ -203,18 +203,15 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
+        # Account found via our link, but minimum deposit not reached
         if total < min_dep and not user.is_verified:
-            part1 = await get_message_text(
-                lang,
-                "account_created_success",
-                trader_id=trader_id,
-                min_deposit=int(min_dep),
-            )
-            part2 = await get_message_text(
-                lang, "need_deposit_hint", min_deposit=int(min_dep)
-            )
             await message.answer(
-                part1 + "\n\n" + part2,
+                await get_message_text(
+                    lang,
+                    "account_ok_need_deposit",
+                    trader_id=trader_id,
+                    min_deposit=int(min_dep),
+                ),
                 parse_mode="HTML",
                 reply_markup=await premium_keyboard(lang, register_url),
             )
