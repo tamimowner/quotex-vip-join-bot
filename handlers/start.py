@@ -231,6 +231,7 @@ async def receive_trader_id(message: Message, bot: Bot):
             user.invite_link = vip_link
             await session.commit()
 
+            # VIP success: NO inline keyboard (no Back / Menu buttons)
             await message.answer(
                 await get_message_text(
                     lang,
@@ -240,17 +241,16 @@ async def receive_trader_id(message: Message, bot: Bot):
                 ),
                 parse_mode="HTML",
                 disable_web_page_preview=True,
-                reply_markup=await main_menu(lang),
             )
         else:
             await message.answer(
                 await get_message_text(lang, "already_verified"),
-                reply_markup=await main_menu(lang),
             )
 
 
 @router.message(F.text)
 async def fallback_text(message: Message):
+    """Any typed message (not command / not trader id) shows main menu again."""
     text = (message.text or "").strip()
     if text.startswith("/"):
         return
@@ -262,9 +262,18 @@ async def fallback_text(message: Message):
         user = result.scalar_one_or_none()
         lang = (user.language if user else None) or "bn"
 
+    # Looks like bad trader id attempt
     if any(ch.isdigit() for ch in text) or len(text) <= 20:
         if not TRADER_ID_RE.match(text):
             await message.answer(
                 await get_message_text(lang, "invalid_trader_id"),
                 parse_mode="HTML",
+                reply_markup=await main_menu(lang),
             )
+            return
+
+    # Normal typed message → bring menu buttons back
+    await message.answer(
+        await get_message_text(lang, "main_menu"),
+        reply_markup=await main_menu(lang),
+    )
