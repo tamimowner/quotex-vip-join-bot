@@ -98,13 +98,24 @@ TEXTS = {
         "⏳ আপনার ডিপোজিটের অপেক্ষায়..."
     ),
     "already_verified": "✅ আপনি ইতিমধ্যে ভেরিফাইড!",
+
     "invite_ready": (
-        "🎉 <b>অভিনন্দন!</b>\n\n"
-        "আপনার অ্যাকাউন্ট ভেরিফাইড হয়েছে।\n"
-        "VIP গ্রুপে যোগ দিন:\n\n"
-        "{link}\n\n"
-        "✅ লিংকে ক্লিক করে গ্রুপে জয়েন করুন।"
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
+        "<b>ভেরিফিকেশন সফল!</b> "
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        "আপনার Trader ID:\n"
+        "<code>{trader_id}</code>\n\n"
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "VIP গ্রুপে যোগ দিন: "
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n'
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        '<a href="{link}">ক্লিক করুন VIP গ্রুপে যোগ দিতে</a>\n\n'
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
+        "VIP সুবিধা উপভোগ করুন!\n"
+        '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji> '
+        "প্রশ্ন থাকলে: @SK_SupportOfficial"
     ),
+
     "already_joined": "✅ আপনি ইতিমধ্যে VIP গ্রুপে জয়েন করেছেন।",
     "status_title": "📊 <b>আপনার অ্যাকাউন্ট স্ট্যাটাস</b>\n\n",
     "status_not_verified": "❌ এখনো ভেরিফাই হয়নি। আমাদের লিংক দিয়ে রেজিস্টার ও ডিপোজিট করুন।",
