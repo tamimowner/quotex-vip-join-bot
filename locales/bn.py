@@ -30,7 +30,8 @@ TEXTS = {
     "btn_support": "📢 সাপোর্ট",
     "btn_status": "📊 স্ট্যাটাস",
     "btn_back": "⬅️ ফিরে যান",
-    "btn_tutorial": "📘 Tutorial",
+    "btn_tutorial": "Tutorial দেখুন",
+    "btn_open_account": "Quotex Account খুলুন",
     "btn_register": "📝 রেজিস্টার ও ডিপোজিট",
     "btn_settings": "⚙️ সেটিংস",
     "btn_change_language": "🌐 ভাষা পরিবর্তন",
@@ -60,15 +61,22 @@ TEXTS = {
         "আরও ডিপোজিট করুন, তারপর Trader ID পাঠান বা অপেক্ষা করুন।"
     ),
     "not_from_our_link": (
-        "❌ <b>আমাদের Affiliate Link থেকে অ্যাকাউন্ট তৈরি হয়নি</b>\n\n"
-        "Trader ID: <code>{trader_id}</code>\n\n"
-        "আপনি আমাদের লিংক দিয়ে অ্যাকাউন্ট খোলেননি, অথবা এখনো আমাদের সিস্টেমে রেকর্ড আসেনি।\n\n"
-        "✅ কী করবেন:\n"
-        "1️⃣ নিচের বাটনে ক্লিক করে <b>নতুন</b> অ্যাকাউন্ট তৈরি করুন\n"
-        "2️⃣ Account Verify করুন\n"
-        "3️⃣ মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
-        "4️⃣ আবার Trader ID পাঠান\n\n"
-        "⚠️ পুরোনো/অন্য লিংকের অ্যাকাউন্ট গ্রহণযোগ্য নয়।"
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "<b>যাচাই ব্যর্থ!</b>\n\n"
+        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
+        "Trader ID <code>{trader_id}</code> আমাদের Affiliate Link দিয়ে তৈরি করা হয়নি।"
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="6300891304414938793">»</tg-emoji> '
+        "অনুগ্রহ করে পুরোনো Account Delete করে নিচের Affiliate Link থেকে নতুন Account তৈরি করুন।"
+        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="6214983170991853422">🔗</tg-emoji> '
+        "Account Create URL :- {register_url}\n\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Account Verify করুন\n'
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> প্রথম Deposit সম্পন্ন করুন\n'
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "তারপর আপনার নতুন 8 সংখ্যার Trader ID আবার পাঠান\n\n"
+        "ধন্যবাদ। "
+        '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
     ),
     "need_deposit_hint": (
         "⏳ এখনো ভেরিফাই হয়নি।\n\n"
@@ -81,7 +89,7 @@ TEXTS = {
         "1️⃣ নিচের বাটনে ক্লিক করে রেজিস্ট্রেশন লিংক খুলুন\n"
         "2️⃣ সেই লিংক দিয়ে <b>নতুন</b> কোটেক্স অ্যাকাউন্ট তৈরি করুন\n"
         "3️⃣ মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
-        "4️⃣ বটে Trader ID পাঠান\n"
+        "৪️⃣ বটে Trader ID পাঠান\n"
         "5️⃣ ভেরিফাই হলে VIP গ্রুপ লিংক পাবেন\n\n"
         "⚠️ শুধু বটের দেওয়া Affiliate Link ব্যবহার করুন।\n"
         "Partner ID (lid): <code>1480996</code>"
