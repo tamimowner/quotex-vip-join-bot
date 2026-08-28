@@ -96,7 +96,6 @@ async def menu_premium(callback: CallbackQuery):
     if user and user.is_verified:
         vip_link = user.invite_link or await get_vip_group_link()
         if vip_link:
-            # No Back / Menu buttons under VIP success message
             await _safe_edit(
                 callback,
                 await get_message_text(
@@ -192,7 +191,6 @@ async def menu_status(callback: CallbackQuery):
 
 @router.callback_query(F.data == "menu:public")
 async def menu_public(callback: CallbackQuery):
-    """All Social Media list with premium custom emoji."""
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
     text = await get_message_text(lang, "public_channel")
@@ -218,9 +216,15 @@ async def menu_create(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
     register_url = await get_affiliate_url()
+    min_dep = await get_min_deposit()
     await _safe_edit(
         callback,
-        await get_message_text(lang, "create_account_guide"),
+        await get_message_text(
+            lang,
+            "create_account_guide",
+            register_url=register_url,
+            min_deposit=int(min_dep),
+        ),
         reply_markup=await premium_keyboard(lang, register_url),
     )
     await callback.answer()
