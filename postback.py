@@ -25,6 +25,21 @@ if os.path.isdir(_static_dir):
     app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
+def _pick(params: dict, *keys: str) -> str:
+    """First non-empty value among keys (case-insensitive key match)."""
+    lower_map = {str(k).lower(): v for k, v in params.items()}
+    for key in keys:
+        v = params.get(key)
+        if v is None:
+            v = lower_map.get(key.lower())
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s and s not in ("{status}", "{click_id}", "{trader_id}", "{event_id}", "{country}", "{sumdep}", "{sumwithdraw}"):
+            return s
+    return ""
+
+
 @app.get("/")
 @app.get("/health")
 async def health():
@@ -32,41 +47,60 @@ async def health():
         "status": "ok",
         "service": "quotex-vip-join-bot",
         "admin": "/admin",
+        "postback": "/postback",
     })
 
 
 @app.api_route("/postback", methods=["GET", "POST"])
+@app.api_route("/pb", methods=["GET", "POST"])
+@app.api_route("/callback", methods=["GET", "POST"])
 async def postback(request: Request):
     if request.method == "GET":
         params = dict(request.query_params)
     else:
+        params = {}
+        # JSON body
         try:
             body = await request.json()
-            params = body if isinstance(body, dict) else {}
+            if isinstance(body, dict):
+                params.update(body)
         except Exception:
+            pass
+        # form body
+        try:
             form = await request.form()
-            params = dict(form)
+            params.update(dict(form))
+        except Exception:
+            pass
+        # also merge query string on POST
+        params.update(dict(request.query_params))
 
-    status = params.get("status") or params.get("{status}") or ""
-    click_id = params.get("cid") or params.get("click_id") or params.get("{click_id}") or ""
-    trader_id = params.get("uid") or params.get("trader_id") or params.get("{trader_id}") or ""
-    event_id = params.get("eid") or params.get("event_id") or params.get("{event_id}") or ""
-    country = params.get("country") or params.get("{country}") or ""
+    status = _pick(params, "status", "{status}", "event", "type", "action").lower()
+    click_id = _pick(params, "cid", "click_id", "clickid", "{click_id}", "subid", "sub_id", "s1")
+    trader_id = _pick(
+        params,
+        "uid", "trader_id", "traderid", "traderId", "user_id", "userid",
+        "{trader_id}", "account_id", "accountid",
+    )
+    event_id = _pick(params, "eid", "event_id", "eventid", "{event_id}", "id")
+    country = _pick(params, "country", "{country}", "geo", "cc")
+
+    raw_sumdep = _pick(params, "sumdep", "{sumdep}", "deposit", "amount", "sum", "dep", "profit")
+    raw_sumwd = _pick(params, "sumwithdraw", "{sumwithdraw}", "withdraw", "withdrawal")
     try:
-        sumdep = float(params.get("sumdep") or params.get("{sumdep}") or 0)
+        sumdep = float(raw_sumdep or 0)
     except (TypeError, ValueError):
         sumdep = 0.0
     try:
-        sumwithdraw = float(params.get("sumwithdraw") or params.get("{sumwithdraw}") or 0)
+        sumwithdraw = float(raw_sumwd or 0)
     except (TypeError, ValueError):
         sumwithdraw = 0.0
 
-    status = str(status).strip().lower()
-    click_id = str(click_id).strip()
-    trader_id = str(trader_id).strip()
-    country = str(country).strip()
-
-    print(f"POSTBACK: status={status} cid={click_id} uid={trader_id} sumdep={sumdep} country={country}")
+    print(
+        f"POSTBACK hit method={request.method} "
+        f"status={status!r} cid={click_id!r} uid={trader_id!r} "
+        f"sumdep={sumdep} country={country!r} keys={list(params.keys())}"
+    )
 
     min_dep = await get_min_deposit()
 
@@ -79,7 +113,7 @@ async def postback(request: Request):
             sumdep=sumdep,
             sumwithdraw=sumwithdraw,
             country=country or None,
-            raw_data=json.dumps(params, ensure_ascii=False),
+            raw_data=json.dumps(params, ensure_ascii=False, default=str),
         )
         session.add(log)
         await session.commit()
@@ -102,6 +136,7 @@ async def postback(request: Request):
             user = result.scalar_one_or_none()
 
         if not user:
+            # Still OK — log saved; user can link later by sending trader_id
             return PlainTextResponse("OK", status_code=200)
 
         had_trader = bool(user.trader_id)
@@ -121,7 +156,7 @@ async def postback(request: Request):
 
         just_verified = False
         total_now = float(user.total_deposit or 0)
-        reg_ok = status in ("reg", "registration", "register") and bool(trader_id)
+        reg_ok = status in ("reg", "registration", "register", "signup", "sign_up") and bool(trader_id)
         deposit_ok = total_now >= min_dep
 
         if not user.is_verified and (deposit_ok or (reg_ok and min_dep <= 0)):
