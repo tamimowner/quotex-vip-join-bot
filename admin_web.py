@@ -1,8 +1,9 @@
 """
 Web Admin Panel API.
-Auth priority:
-  1) Telegram WebApp initData → user id in ADMIN_IDS
-  2) Optional fallback: ADMIN_WEB_TOKEN (browser only)
+Auth:
+  1) Telegram WebApp initData (preferred)
+  2) Manual Telegram admin ID login (ADMIN_IDS)
+  3) Optional ADMIN_WEB_TOKEN fallback
 """
 from __future__ import annotations
 
@@ -164,12 +165,16 @@ async def require_admin(
 
     raise HTTPException(
         status_code=401,
-        detail="Unauthorized — open Web App from Telegram /admin (ADMIN_IDS)",
+        detail="Unauthorized — login with Admin Telegram ID",
     )
 
 
 class TgAuthBody(BaseModel):
     init_data: str
+
+
+class IdAuthBody(BaseModel):
+    telegram_id: int
 
 
 class SettingBody(BaseModel):
@@ -225,6 +230,25 @@ async def api_auth_telegram(body: TgAuthBody):
             "first_name": user.get("first_name"),
             "last_name": user.get("last_name"),
         },
+    }
+
+
+@router.post("/api/auth/id")
+async def api_auth_id(body: IdAuthBody):
+    """Login with numeric Telegram ID if it is in ADMIN_IDS."""
+    try:
+        uid = int(body.telegram_id)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Invalid telegram_id")
+    if not settings.admin_ids:
+        raise HTTPException(500, "ADMIN_IDS not configured on server")
+    if uid not in settings.admin_ids:
+        raise HTTPException(403, f"Not an admin (id={uid}). Add to ADMIN_IDS.")
+    session = _make_session(uid)
+    return {
+        "ok": True,
+        "session": session,
+        "user": {"id": uid, "first_name": "Admin"},
     }
 
 
