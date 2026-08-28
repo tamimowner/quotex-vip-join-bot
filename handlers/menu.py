@@ -186,15 +186,10 @@ async def menu_status(callback: CallbackQuery):
 
 @router.callback_query(F.data == "menu:public")
 async def menu_public(callback: CallbackQuery):
+    """All Social Media list with premium custom emoji."""
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    channel = await get_setting("public_channel")
     text = await get_message_text(lang, "public_channel")
-    if channel:
-        if "{channel}" in text or "{link}" in text:
-            text = text.format(channel=channel, link=channel)
-        else:
-            text = f"{text.rstrip()}\n{channel}" if channel not in text else text
     await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
