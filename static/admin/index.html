@@ -10,7 +10,7 @@
 body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:#121a24}
 header h1{margin:0;font-size:1.05rem}
-#authStatus{font-size:.8rem;color:var(--muted)}
+#authStatus{font-size:.85rem;color:var(--muted)}
 #authStatus.ok{color:#86efac}
 #authStatus.err{color:#fca5a5}
 input,select,textarea,button{font:inherit;border-radius:8px;border:1px solid var(--border);background:#0d1218;color:var(--text);padding:8px 12px}
@@ -18,7 +18,7 @@ button{cursor:pointer;background:var(--accent);border-color:transparent;font-wei
 button.secondary{background:#243044}
 button.ok{background:var(--ok);color:#052e16}
 button.danger{background:#991b1b}
-button:disabled{opacity:.6;cursor:wait}
+button:disabled{opacity:.6}
 nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border)}
 nav button.tab{background:transparent;border:1px solid var(--border)}
 nav button.tab.active{background:var(--accent)}
@@ -30,9 +30,6 @@ label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
 .field{margin-bottom:10px}
 textarea{width:100%;min-height:140px;font-family:ui-monospace,monospace;font-size:.85rem}
 .preview{background:#0b0f14;border:1px dashed var(--border);border-radius:10px;padding:12px;min-height:80px;line-height:1.5}
-.preview b{font-weight:700;color:#fff}
-.preview code{background:#1e293b;padding:1px 5px;border-radius:4px}
-.preview .tg-e{font-size:1.2em}
 .muted{color:var(--muted);font-size:.85rem}
 .stat{font-size:1.35rem;font-weight:700}
 table{width:100%;border-collapse:collapse;font-size:.85rem}
@@ -41,12 +38,12 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
 .hidden{display:none!important}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .emoji-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.emoji-bar button{background:#1e293b;border:1px solid var(--border);padding:6px 10px;font-size:1.1rem}
+.emoji-bar button{background:#1e293b;border:1px solid var(--border);padding:6px 10px}
 .gate{max-width:400px;margin:48px auto;padding:0 16px}
 .gate h2{margin:0 0 6px;text-align:center}
 .login-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:16px}
 .login-box input{width:100%}
-.err-box{background:#450a0a;border:1px solid #991b1b;color:#fecaca;padding:10px 12px;border-radius:8px;margin-top:12px;font-size:.85rem;display:none}
+#loginErr{background:#450a0a;border:1px solid #991b1b;color:#fecaca;padding:10px 12px;border-radius:8px;margin-top:12px;font-size:.85rem;display:none;word-break:break-word}
 .raw{font-size:.7rem;color:var(--muted);max-width:220px;word-break:break-all}
 </style>
 </head>
@@ -75,10 +72,8 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
       <input id="loginPass" type="password" autocomplete="current-password" />
     </div>
     <button type="button" class="ok" id="btnLogin" style="width:100%;margin-top:8px">Login</button>
-    <div class="err-box" id="loginErr"></div>
-    <p class="muted" style="margin:14px 0 0;font-size:.78rem">
-      Set on Railway: ADMIN_USERNAME + ADMIN_PASSWORD
-    </p>
+    <div id="loginErr"></div>
+    <p class="muted" style="margin:14px 0 0;font-size:.78rem">Railway: ADMIN_USERNAME + ADMIN_PASSWORD</p>
   </div>
 </div>
 
@@ -103,12 +98,10 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
     <p class="muted" id="affiliate_preview"></p>
     <button type="button" class="ok" id="btnSaveLinks">Save links</button>
   </section>
-
   <section id="tab-buttons" class="panel hidden">
     <div class="card" id="buttonsBox"></div>
     <button type="button" class="ok" id="btnSaveButtons">Save buttons</button>
   </section>
-
   <section id="tab-messages" class="panel hidden">
     <div class="card">
       <div class="row" style="margin-bottom:12px">
@@ -128,7 +121,6 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
       </div>
     </div>
   </section>
-
   <section id="tab-ai" class="panel hidden">
     <div class="card grid 2">
       <div class="field"><label>Topic</label><input id="aiTopic" value="VIP Join" /></div>
@@ -147,108 +139,119 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
       <button type="button" class="secondary" id="btnAiToWelcome" style="margin-top:8px">to welcome</button>
     </div>
   </section>
-
   <section id="tab-stats" class="panel hidden">
     <div class="card grid 2" id="statsBox"></div>
     <div class="card">
       <h3 style="margin:0 0 8px;font-size:.95rem">Recent postbacks</h3>
       <p class="muted" id="pbHint">-</p>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr><th>Time</th><th>Status</th><th>Trader</th><th>CID</th><th>Dep</th><th>Raw</th></tr></thead>
-          <tbody id="pbBody"></tbody>
-        </table>
-      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Time</th><th>Status</th><th>Trader</th><th>CID</th><th>Dep</th><th>Raw</th></tr></thead>
+        <tbody id="pbBody"></tbody>
+      </table></div>
     </div>
     <div class="card">
       <h3 style="margin:0 0 8px;font-size:.95rem">Recent users</h3>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr><th>TG</th><th>Name</th><th>Trader</th><th>Dep</th><th>OK</th><th>Join</th></tr></thead>
-          <tbody id="usersBody"></tbody>
-        </table>
-      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>TG</th><th>Name</th><th>Trader</th><th>Dep</th><th>OK</th><th>Join</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table></div>
     </div>
   </section>
 </main>
 </div>
 
 <div class="toast" id="toast"></div>
+
 <script>
+window.__adminBootError = null;
+try {
 (function () {
-  function el(id) { return document.getElementById(id); }
+  function el(id) {
+    var n = document.getElementById(id);
+    if (!n) throw new Error("Missing element: " + id);
+    return n;
+  }
 
   var BUTTON_KEYS = [
     "btn_premium", "btn_create_account", "btn_delete_account", "btn_public",
     "btn_status", "btn_support", "btn_register", "btn_back", "btn_settings"
-  ];
-  var TG_EMOJI_SAMPLES = [
-    { id: "5188481279963715781", fb: "W" },
-    { id: "5879757713658875847", fb: "*" },
-    { id: "5215174853895660531", fb: "!" },
-    { id: "6300954126901577963", fb: "v" },
-    { id: "5397782960512444700", fb: "P" },
-    { id: "5420323339723881652", fb: "!" }
   ];
 
   var sessionKey = localStorage.getItem("admin_session") || "";
   var messagesCache = {};
 
   function toast(msg) {
-    var t = el("toast");
+    var t = document.getElementById("toast");
+    if (!t) return;
     t.textContent = msg;
     t.style.display = "block";
     setTimeout(function () { t.style.display = "none"; }, 2200);
   }
 
   function showLoginError(msg) {
-    var box = el("loginErr");
-    box.style.display = msg ? "block" : "none";
-    box.textContent = msg || "";
+    var box = document.getElementById("loginErr");
+    if (!box) return;
+    if (msg) {
+      box.style.display = "block";
+      box.textContent = msg;
+    } else {
+      box.style.display = "none";
+      box.textContent = "";
+    }
   }
 
-  function fetchJson(url, opts, timeoutMs) {
-    timeoutMs = timeoutMs || 15000;
+  function apiBase() {
+    // page is /admin or /admin/
+    var p = window.location.pathname || "/admin";
+    if (p.length > 1 && p.charAt(p.length - 1) === "/") p = p.slice(0, -1);
+    if (p.indexOf("/admin") === -1) return "/admin";
+    return p;
+  }
+
+  function fetchJson(url, opts) {
+    opts = opts || {};
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs);
-    var options = opts || {};
-    options.signal = ctrl.signal;
-    return fetch(url, options).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (data) {
+    var timer = setTimeout(function () { ctrl.abort(); }, 20000);
+    opts.signal = ctrl.signal;
+    return fetch(url, opts).then(function (res) {
+      return res.text().then(function (text) {
+        var data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { detail: text.slice(0, 200) }; }
         return { res: res, data: data };
       });
-    }).finally(function () {
-      clearTimeout(timer);
-    });
+    }).finally(function () { clearTimeout(timer); });
   }
 
   function api(path, opts) {
     opts = opts || {};
-    var headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+    var headers = { "Content-Type": "application/json" };
+    if (opts.headers) {
+      for (var k in opts.headers) headers[k] = opts.headers[k];
+    }
     if (sessionKey) headers["X-Admin-Session"] = sessionKey;
     opts.headers = headers;
-    return fetchJson("/admin" + path, opts).then(function (r) {
+    return fetchJson(apiBase() + path, opts).then(function (r) {
       if (r.res.status === 401 || r.res.status === 403) {
         throw new Error(r.data.detail || "Unauthorized");
       }
       if (!r.res.ok) {
-        throw new Error(r.data.detail || r.res.statusText || "Request failed");
+        var d = r.data.detail;
+        if (typeof d === "object") d = JSON.stringify(d);
+        throw new Error(d || r.res.statusText || "Request failed");
       }
       return r.data;
     });
   }
 
-  function escAttr(s) {
-    return String(s || "").replace(/&/g, "&").replace(/"/g, """).replace(/</g, "<");
-  }
-
   function renderTgHtml(html) {
-    var s = String(html || "");
-    s = s.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
+    // Avoid HTML entities in source — use DOM text then allow a few tags
+    var div = document.createElement("div");
+    div.textContent = String(html || "");
+    var s = div.innerHTML;
     s = s.replace(/<(\/?)(b|strong|i|em|u|s|code|pre)\s*>/gi, "<$1$2>");
-    s = s.replace(/<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
-      function (_m, _id, fb) { return '<span class="tg-e">' + (fb || "*") + "</span>"; });
-    return s.replace(/\n/g, "<br>");
+    s = s.replace(/<tg-emoji[^&]*>([^&]*)<\/tg-emoji>/gi, "<span>$1</span>");
+    s = s.replace(/\n/g, "<br>");
+    return s;
   }
 
   function insertAtCursor(ta, text) {
@@ -261,14 +264,19 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
   }
 
   function setupEmojiBar() {
-    var bar = el("emojiBar");
+    var bar = document.getElementById("emojiBar");
     if (!bar || bar.childNodes.length) return;
-    TG_EMOJI_SAMPLES.forEach(function (e) {
+    var samples = [
+      { id: "5188481279963715781", fb: "W" },
+      { id: "5879757713658875847", fb: "*" },
+      { id: "5215174853895660531", fb: "!" }
+    ];
+    samples.forEach(function (e) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = e.fb;
       btn.onclick = function () {
-        insertAtCursor(el("msgValue"), '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ");
+        insertAtCursor(el("msgValue"), "<tg-emoji emoji-id=\"" + e.id + "\">" + e.fb + "</tg-emoji> ");
       };
       bar.appendChild(btn);
     });
@@ -279,7 +287,7 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
       document.querySelectorAll("nav .tab").forEach(function (b) { b.classList.remove("active"); });
       btn.classList.add("active");
       document.querySelectorAll(".panel").forEach(function (p) { p.classList.add("hidden"); });
-      el("tab-" + btn.dataset.tab).classList.remove("hidden");
+      document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
     });
   });
 
@@ -297,23 +305,48 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
     var box = el("buttonsBox");
     box.innerHTML = "";
     BUTTON_KEYS.forEach(function (k) {
-      var bn = (data.buttons[k + "_bn"] || "");
-      var en = (data.buttons[k + "_en"] || "");
-      var style = data.buttons["style_" + k] || "primary";
-      var icon = data.buttons["icon_" + k] || "";
-      var div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML =
-        "<strong>" + k + "</strong>" +
-        '<div class="grid 2" style="margin-top:8px">' +
-        '<div class="field"><label>BN</label><input data-k="' + k + '_bn" value="' + escAttr(bn) + '" style="width:100%"></div>' +
-        '<div class="field"><label>EN</label><input data-k="' + k + '_en" value="' + escAttr(en) + '" style="width:100%"></div>' +
-        '<div class="field"><label>Style</label><select data-k="style_' + k + '">' +
-        '<option value="primary"' + (style === "primary" ? " selected" : "") + ">primary</option>' +
-        '<option value="success"' + (style === "success" ? " selected" : "") + ">success</option>' +
-        '<option value="danger"' + (style === "danger" ? " selected" : "") + ">danger</option></select></div>' +
-        '<div class="field"><label>Emoji id</label><input data-k="icon_' + k + '" value="' + escAttr(icon) + '" style="width:100%"></div></div>';
-      box.appendChild(div);
+      var wrap = document.createElement("div");
+      wrap.className = "card";
+      var title = document.createElement("strong");
+      title.textContent = k;
+      wrap.appendChild(title);
+
+      var grid = document.createElement("div");
+      grid.className = "grid 2";
+      grid.style.marginTop = "8px";
+
+      function addField(labelText, dataK, val, isSelect) {
+        var f = document.createElement("div");
+        f.className = "field";
+        var lab = document.createElement("label");
+        lab.textContent = labelText;
+        f.appendChild(lab);
+        var input;
+        if (isSelect) {
+          input = document.createElement("select");
+          ["primary", "success", "danger"].forEach(function (opt) {
+            var o = document.createElement("option");
+            o.value = opt;
+            o.textContent = opt;
+            if (opt === val) o.selected = true;
+            input.appendChild(o);
+          });
+        } else {
+          input = document.createElement("input");
+          input.value = val || "";
+          input.style.width = "100%";
+        }
+        input.setAttribute("data-k", dataK);
+        f.appendChild(input);
+        grid.appendChild(f);
+      }
+
+      addField("BN", k + "_bn", data.buttons[k + "_bn"] || "", false);
+      addField("EN", k + "_en", data.buttons[k + "_en"] || "", false);
+      addField("Style", "style_" + k, data.buttons["style_" + k] || "primary", true);
+      addField("Emoji id", "icon_" + k, data.buttons["icon_" + k] || "", false);
+      wrap.appendChild(grid);
+      box.appendChild(wrap);
     });
   }
 
@@ -410,28 +443,28 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
   function loadStats() {
     return api("/api/stats").then(function (s) {
       el("statsBox").innerHTML =
-        '<div><div class="muted">Users</div><div class="stat">' + s.total_users + "</div></div>" +
-        '<div><div class="muted">Verified</div><div class="stat">' + s.verified + "</div></div>" +
-        '<div><div class="muted">Joined</div><div class="stat">' + s.joined + "</div></div>" +
-        '<div><div class="muted">Postbacks</div><div class="stat">' + s.postbacks + "</div></div>";
+        "<div><div class=\"muted\">Users</div><div class=\"stat\">" + s.total_users + "</div></div>" +
+        "<div><div class=\"muted\">Verified</div><div class=\"stat\">" + s.verified + "</div></div>" +
+        "<div><div class=\"muted\">Joined</div><div class=\"stat\">" + s.joined + "</div></div>" +
+        "<div><div class=\"muted\">Postbacks</div><div class=\"stat\">" + s.postbacks + "</div></div>";
       return api("/api/postbacks?limit=40");
     }).then(function (pb) {
       var list = pb.postbacks || [];
       el("pbHint").textContent = list.length ? ("Last " + list.length + " hits") : "No postbacks yet";
       el("pbBody").innerHTML = list.map(function (x) {
         var t = (x.created_at || "").replace("T", " ").slice(0, 19);
-        var raw = (x.raw_data || "").slice(0, 120);
+        var raw = (x.raw_data || "").slice(0, 80);
         return "<tr><td>" + t + "</td><td>" + (x.status || "-") +
           "</td><td>" + (x.trader_id || "-") + "</td><td>" + (x.click_id || "-") +
           "</td><td>$" + Number(x.sumdep || 0).toFixed(2) +
-          '</td><td class="raw">' + escAttr(raw) + "</td></tr>";
-      }).join("") || '<tr><td colspan="6">Empty</td></tr>';
+          "</td><td class=\"raw\">" + String(raw).replace(/</g, " ") + "</td></tr>";
+      }).join("") || "<tr><td colspan=\"6\">Empty</td></tr>";
       return api("/api/users?limit=40");
     }).then(function (u) {
       el("usersBody").innerHTML = (u.users || []).map(function (x) {
         return "<tr><td><code>" + x.telegram_id + "</code></td><td>" +
-          escAttr(x.full_name || x.username || "-") + "</td><td>" + (x.trader_id || "-") +
-          "</td><td>$" + Number(x.total_deposit || 0).toFixed(2) +
+          String(x.full_name || x.username || "-").replace(/</g, " ") + "</td><td>" +
+          (x.trader_id || "-") + "</td><td>$" + Number(x.total_deposit || 0).toFixed(2) +
           "</td><td>" + (x.is_verified ? "Yes" : "No") +
           "</td><td>" + (x.has_joined ? "Yes" : "No") + "</td></tr>";
       }).join("");
@@ -445,15 +478,18 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
       return api("/api/messages");
     }).then(function (msgs) {
       messagesCache = msgs.messages || {};
-      el("msgKey").innerHTML = (msgs.keys || []).map(function (k) {
-        return '<option value="' + k + '">' + k + "</option>";
-      }).join("");
+      var sel = el("msgKey");
+      sel.innerHTML = "";
+      (msgs.keys || []).forEach(function (k) {
+        var o = document.createElement("option");
+        o.value = k;
+        o.textContent = k;
+        sel.appendChild(o);
+      });
       setupEmojiBar();
       loadMsgEditor();
       return loadStats();
-    }).then(function () {
-      toast("Loaded");
-    });
+    }).then(function () { toast("Loaded"); });
   }
 
   function showApp(name) {
@@ -487,26 +523,29 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
     el("authStatus").textContent = "Logging in...";
     showLoginError("");
 
-    fetchJson("/admin/api/auth/login", {
+    var url = apiBase() + "/api/auth/login";
+    fetchJson(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: username, password: password })
     }).then(function (r) {
       if (!r.res.ok) {
         var d = r.data.detail;
-        if (Array.isArray(d)) d = d.map(function (x) { return x.msg || JSON.stringify(x); }).join("; ");
+        if (Array.isArray(d)) {
+          d = d.map(function (x) { return x.msg || JSON.stringify(x); }).join("; ");
+        }
         throw new Error(d || ("HTTP " + r.res.status));
       }
-      if (!r.data.session) throw new Error("No session returned");
+      if (!r.data.session) throw new Error("No session in response");
       sessionKey = r.data.session;
       localStorage.setItem("admin_session", sessionKey);
       localStorage.setItem("admin_user", username);
       showApp(username);
       return loadAll();
     }).catch(function (e) {
-      var msg = (e && e.name === "AbortError") ? "Server timeout" : (e.message || "Login failed");
+      var msg = (e && e.name === "AbortError") ? "Server timeout" : (e.message || String(e));
       showGate("Login failed");
-      showLoginError(msg);
+      showLoginError(msg + " | url=" + url);
     }).finally(function () {
       btn.disabled = false;
       btn.textContent = "Login";
@@ -537,12 +576,15 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
     showGate("Username and Password");
   }
 
-  el("btnLogin").addEventListener("click", doLogin);
+  el("btnLogin").addEventListener("click", function (ev) {
+    ev.preventDefault();
+    doLogin();
+  });
   el("loginPass").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") doLogin();
+    if (e.key === "Enter") { e.preventDefault(); doLogin(); }
   });
   el("loginUser").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") doLogin();
+    if (e.key === "Enter") { e.preventDefault(); doLogin(); }
   });
   el("btnLogout").addEventListener("click", doLogout);
   el("btnLoad").addEventListener("click", function () {
@@ -551,6 +593,16 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical
 
   boot();
 })();
+} catch (err) {
+  window.__adminBootError = String(err && err.message ? err.message : err);
+  var box = document.getElementById("loginErr");
+  if (box) {
+    box.style.display = "block";
+    box.textContent = "JS ERROR: " + window.__adminBootError;
+  }
+  var st = document.getElementById("authStatus");
+  if (st) st.textContent = "JS ERROR";
+}
 </script>
 </body>
 </html>
