@@ -4,104 +4,78 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>VIP Bot Admin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg: #0f1419;
-    --card: #1a2332;
-    --border: #2d3a4f;
-    --text: #e7ecf3;
-    --muted: #8b9bb4;
-    --accent: #3b82f6;
-    --ok: #22c55e;
+    --bg: #0f1419; --card: #1a2332; --border: #2d3a4f;
+    --text: #e7ecf3; --muted: #8b9bb4; --accent: #3b82f6; --ok: #22c55e;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; font-family: system-ui, sans-serif;
     background: var(--bg); color: var(--text); min-height: 100vh;
   }
   header {
-    padding: 14px 20px; border-bottom: 1px solid var(--border);
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
     background: #121a24;
   }
-  header h1 { margin: 0; font-size: 1.15rem; }
-  .token-row { display: flex; gap: 8px; align-items: center; }
+  header h1 { margin: 0; font-size: 1.05rem; }
+  #authStatus { font-size: 0.8rem; color: var(--muted); }
+  #authStatus.ok { color: #86efac; }
+  #authStatus.err { color: #fca5a5; }
   input, select, textarea, button {
     font: inherit; border-radius: 8px; border: 1px solid var(--border);
     background: #0d1218; color: var(--text); padding: 8px 12px;
   }
-  button {
-    cursor: pointer; background: var(--accent); border-color: transparent; font-weight: 600;
-  }
+  button { cursor: pointer; background: var(--accent); border-color: transparent; font-weight: 600; }
   button.secondary { background: #243044; }
   button.ok { background: var(--ok); color: #052e16; }
-  nav {
-    display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-  }
+  nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--border); }
   nav button.tab { background: transparent; border: 1px solid var(--border); }
   nav button.tab.active { background: var(--accent); }
-  main { padding: 16px 20px 40px; max-width: 1100px; margin: 0 auto; }
-  .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; margin-bottom: 14px;
-  }
-  .card h2 { margin: 0 0 12px; font-size: 1rem; }
+  main { padding: 14px 16px 40px; max-width: 1100px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
   .grid { display: grid; gap: 12px; }
-  .grid.2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .grid.2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
   .field { margin-bottom: 10px; }
   textarea { width: 100%; min-height: 140px; font-family: ui-monospace, monospace; font-size: 0.85rem; }
-  .preview {
-    background: #0b0f14; border: 1px dashed var(--border); border-radius: 10px;
-    padding: 14px; min-height: 100px; line-height: 1.5;
-  }
-  .preview b, .preview strong { font-weight: 700; color: #fff; }
-  .preview code {
-    background: #1e293b; padding: 1px 6px; border-radius: 4px;
-    font-family: ui-monospace, monospace; font-size: 0.85em;
-  }
-  .preview a { color: #60a5fa; }
-  .preview .tg-e { display: inline-block; font-size: 1.25em; vertical-align: middle; }
-  .preview .tg-e-id {
-    font-size: 0.65em; color: var(--muted); vertical-align: super;
-    font-family: ui-monospace, monospace;
-  }
+  .preview { background: #0b0f14; border: 1px dashed var(--border); border-radius: 10px; padding: 12px; min-height: 80px; line-height: 1.5; }
+  .preview b { font-weight: 700; color: #fff; }
+  .preview code { background: #1e293b; padding: 1px 5px; border-radius: 4px; }
+  .preview .tg-e { font-size: 1.2em; }
   .muted { color: var(--muted); font-size: 0.85rem; }
-  .stat { font-size: 1.4rem; font-weight: 700; }
+  .stat { font-size: 1.35rem; font-weight: 700; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
   .badge.ok { background: #14532d; color: #86efac; }
   .badge.no { background: #44403c; color: #d6d3d1; }
-  .toast {
-    position: fixed; bottom: 16px; right: 16px; background: #14532d; color: #fff;
-    padding: 10px 16px; border-radius: 8px; display: none; z-index: 99;
-  }
+  .toast { position: fixed; bottom: 16px; right: 16px; background: #14532d; color: #fff; padding: 10px 16px; border-radius: 8px; display: none; z-index: 99; }
   .hidden { display: none !important; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .emoji-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .emoji-bar button {
-    background: #1e293b; border: 1px solid var(--border); padding: 6px 10px;
-    font-size: 1.1rem; border-radius: 8px;
-  }
-  .hint {
-    background: #0d1218; border-left: 3px solid var(--accent);
-    padding: 10px 12px; margin-bottom: 12px; border-radius: 0 8px 8px 0;
-    font-size: 0.85rem; color: var(--muted);
-  }
-  .hint code { background: #1e293b; padding: 1px 5px; border-radius: 3px; color: #93c5fd; }
+  .emoji-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .emoji-bar button { background: #1e293b; border: 1px solid var(--border); padding: 6px 10px; font-size: 1.1rem; }
+  .gate { padding: 40px 20px; text-align: center; }
+  .gate h2 { margin: 0 0 12px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🛠 VIP Bot — Web Admin</h1>
-  <div class="token-row">
-    <input id="token" type="password" placeholder="ADMIN_WEB_TOKEN" style="min-width:180px" />
-    <button id="btnSaveToken" class="secondary" type="button">Save token</button>
-    <button id="btnLoad" type="button">Load</button>
+  <div>
+    <h1>🛠 VIP Bot — Web Admin</h1>
+    <div id="authStatus">Checking Telegram…</div>
   </div>
+  <button type="button" id="btnLoad" class="secondary">Reload</button>
 </header>
+
+<div id="gate" class="gate hidden">
+  <h2>⛔ Admin only</h2>
+  <p class="muted" id="gateMsg">Open this panel from Telegram bot with <code>/admin</code> → Web App.<br/>Your Telegram ID must be in <code>ADMIN_IDS</code>.</p>
+</div>
+
+<div id="app" class="hidden">
 <nav>
   <button type="button" class="tab active" data-tab="links">Links & Deposit</button>
   <button type="button" class="tab" data-tab="buttons">Buttons</button>
@@ -112,69 +86,33 @@
 <main>
   <section id="tab-links" class="panel">
     <div class="card grid 2">
-      <div class="field">
-        <label>Affiliate / Quotex register link</label>
-        <input id="affiliate_link_base" style="width:100%" />
-      </div>
-      <div class="field">
-        <label>VIP group static invite link</label>
-        <input id="vip_group_link" style="width:100%" />
-      </div>
-      <div class="field">
-        <label>Min deposit ($)</label>
-        <input id="min_deposit" type="number" min="0" step="1" />
-      </div>
-      <div class="field">
-        <label>Public channel</label>
-        <input id="public_channel" style="width:100%" />
-      </div>
-      <div class="field">
-        <label>Site ID</label>
-        <input id="site_id" />
-      </div>
-      <div class="field">
-        <label>Welcome photo URL</label>
-        <input id="welcome_photo_url" style="width:100%" />
-      </div>
+      <div class="field"><label>Affiliate / Quotex register link</label><input id="affiliate_link_base" style="width:100%" /></div>
+      <div class="field"><label>VIP group static invite link</label><input id="vip_group_link" style="width:100%" /></div>
+      <div class="field"><label>Min deposit ($)</label><input id="min_deposit" type="number" min="0" step="1" /></div>
+      <div class="field"><label>Public channel</label><input id="public_channel" style="width:100%" /></div>
+      <div class="field"><label>Site ID</label><input id="site_id" /></div>
+      <div class="field"><label>Welcome photo URL</label><input id="welcome_photo_url" style="width:100%" /></div>
     </div>
     <p class="muted" id="affiliate_preview"></p>
     <button type="button" class="ok" id="btnSaveLinks">Save links</button>
   </section>
 
   <section id="tab-buttons" class="panel hidden">
-    <div class="hint">Button texts BN/EN + custom emoji id for Telegram buttons.</div>
     <div class="card" id="buttonsBox"></div>
     <button type="button" class="ok" id="btnSaveButtons">Save buttons</button>
   </section>
 
   <section id="tab-messages" class="panel hidden">
     <div class="card">
-      <div class="hint">
-        HTML: b, i, code, a href — and premium:
-        <code><tg-emoji emoji-id="ID">👋</tg-emoji></code>
-      </div>
       <div class="row" style="margin-bottom:12px">
-        <div class="field" style="flex:1;min-width:160px">
-          <label>Message key</label>
-          <select id="msgKey"></select>
-        </div>
-        <div class="field">
-          <label>Language</label>
+        <div class="field" style="flex:1;min-width:140px"><label>Message key</label><select id="msgKey"></select></div>
+        <div class="field"><label>Language</label>
           <select id="msgLang"><option value="bn">বাংলা</option><option value="en">English</option></select>
         </div>
       </div>
-      <div class="field">
-        <label>Premium tg-emoji insert</label>
-        <div class="emoji-bar" id="emojiBar"></div>
-      </div>
-      <div class="field">
-        <label>HTML source</label>
-        <textarea id="msgValue"></textarea>
-      </div>
-      <div class="field">
-        <label>Live HTML mockup</label>
-        <div class="preview" id="msgPreview"></div>
-      </div>
+      <div class="emoji-bar" id="emojiBar"></div>
+      <div class="field"><label>HTML</label><textarea id="msgValue"></textarea></div>
+      <div class="field"><label>Preview</label><div class="preview" id="msgPreview"></div></div>
       <p class="muted" id="msgSource"></p>
       <div class="row">
         <button type="button" class="ok" id="btnSaveMsg">Save message</button>
@@ -186,54 +124,38 @@
 
   <section id="tab-ai" class="panel hidden">
     <div class="card grid 2">
-      <div class="field">
-        <label>Topic / bot name</label>
-        <input id="aiTopic" value="VIP Join" />
-      </div>
-      <div class="field">
-        <label>Language</label>
+      <div class="field"><label>Topic</label><input id="aiTopic" value="VIP Join" /></div>
+      <div class="field"><label>Language</label>
         <select id="aiLang"><option value="bn">বাংলা</option><option value="en">English</option></select>
       </div>
-      <div class="field">
-        <label>Tone</label>
-        <select id="aiTone">
-          <option value="friendly">Friendly</option>
-          <option value="pro">Professional</option>
-          <option value="hype">Hype</option>
-        </select>
+      <div class="field"><label>Tone</label>
+        <select id="aiTone"><option value="friendly">Friendly</option><option value="pro">Pro</option><option value="hype">Hype</option></select>
       </div>
-      <div class="field">
-        <label><input type="checkbox" id="aiPrem" checked /> Premium tg-emoji</label>
-      </div>
+      <div class="field"><label><input type="checkbox" id="aiPrem" checked /> Premium tg-emoji</label></div>
     </div>
-    <button type="button" id="btnAiGen">Generate caption</button>
+    <button type="button" id="btnAiGen">Generate</button>
     <div class="card" style="margin-top:12px">
-      <label>Result HTML</label>
       <textarea id="aiOut"></textarea>
-      <div class="preview" id="aiPreview" style="margin-top:10px"></div>
-      <div class="row" style="margin-top:10px">
-        <button type="button" class="secondary" id="btnAiToWelcome">Copy → welcome message editor</button>
-      </div>
+      <div class="preview" id="aiPreview" style="margin-top:8px"></div>
+      <button type="button" class="secondary" id="btnAiToWelcome" style="margin-top:8px">Copy → welcome</button>
     </div>
   </section>
 
   <section id="tab-stats" class="panel hidden">
     <div class="card grid 2" id="statsBox"></div>
     <div class="card">
-      <h2>Recent users</h2>
+      <h2 style="margin:0 0 10px;font-size:1rem">Recent users</h2>
       <div style="overflow-x:auto">
         <table>
-          <thead>
-            <tr>
-              <th>TG ID</th><th>Name</th><th>Trader</th><th>Dep</th><th>Verified</th><th>Joined</th>
-            </tr>
-          </thead>
+          <thead><tr><th>TG ID</th><th>Name</th><th>Trader</th><th>Dep</th><th>Verified</th><th>Joined</th></tr></thead>
           <tbody id="usersBody"></tbody>
         </table>
       </div>
     </div>
   </section>
 </main>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -242,34 +164,21 @@ const BUTTON_KEYS = [
   "btn_status","btn_support","btn_register","btn_back","btn_settings"
 ];
 const TG_EMOJI_SAMPLES = [
-  { id: "5188481279963715781", fb: "👋", name: "wave" },
-  { id: "5879757713658875847", fb: "✨", name: "spark" },
-  { id: "5215174853895660531", fb: "📢", name: "megaphone" },
-  { id: "6300954126901577963", fb: "👇", name: "down" },
-  { id: "5397782960512444700", fb: "📌", name: "pin" },
-  { id: "5420323339723881652", fb: "⚠️", name: "warn" },
-  { id: "5260293602610833636", fb: "✅", name: "check" },
-  { id: "5447644880824181073", fb: "🎁", name: "gift" },
+  { id: "5188481279963715781", fb: "👋" },
+  { id: "5879757713658875847", fb: "✨" },
+  { id: "5215174853895660531", fb: "📢" },
+  { id: "6300954126901577963", fb: "👇" },
+  { id: "5397782960512444700", fb: "📌" },
+  { id: "5420323339723881652", fb: "⚠️" },
 ];
+let sessionKey = localStorage.getItem("admin_session") || "";
 let messagesCache = {};
-let messageKeys = [];
 
-function token() {
-  return localStorage.getItem("admin_token") || $("token").value.trim();
-}
-function setToken(t) {
-  localStorage.setItem("admin_token", t);
-  $("token").value = t;
-}
-async function api(path, opts = {}) {
-  const t = token();
-  const headers = Object.assign({ "Content-Type": "application/json", "X-Admin-Token": t }, opts.headers || {});
-  const res = await fetch("/admin" + path, { ...opts, headers });
-  if (res.status === 401) throw new Error("Unauthorized — check ADMIN_WEB_TOKEN");
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || res.statusText);
-  return data;
-}
+try {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+} catch (_) {}
+
 function toast(msg) {
   const el = $("toast");
   el.textContent = msg;
@@ -277,56 +186,43 @@ function toast(msg) {
   setTimeout(() => (el.style.display = "none"), 2200);
 }
 
+async function api(path, opts = {}) {
+  const headers = Object.assign(
+    { "Content-Type": "application/json" },
+    opts.headers || {}
+  );
+  if (sessionKey) headers["X-Admin-Session"] = sessionKey;
+  const res = await fetch("/admin" + path, { ...opts, headers });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(data.detail || "Unauthorized");
+  }
+  if (!res.ok) throw new Error(data.detail || res.statusText);
+  return data;
+}
+
 function renderTgHtml(html) {
-  let s = (html || "")
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
+  let s = (html || "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
   s = s.replace(/<(\/?)(b|strong|i|em|u|s|code|pre)\s*>/gi, "<$1$2>");
-  s = s.replace(
-    /<a\s+href=(?:"|"|')([^"'&]+)(?:"|"|')\s*>/gi,
-    '<a href="$1" target="_blank" rel="noopener">'
-  );
-  s = s.replace(/<\/a>/gi, "</a>");
-  s = s.replace(
-    /<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
-    function (_, id, fb) {
-      return '<span class="tg-e" title="emoji-id: ' + id + '">' + (fb || "⭐") +
-        '</span><span class="tg-e-id">' + id.slice(-4) + "</span>";
-    }
-  );
+  s = s.replace(/<tg-emoji\s+emoji-id=(?:"|"|')(\d+)(?:"|"|')\s*>([^&]*)<\/tg-emoji>/gi,
+    (_, id, fb) => '<span class="tg-e">' + (fb || "⭐") + "</span>");
   return s.replace(/\n/g, "<br>");
 }
 
 function insertAtCursor(ta, text) {
-  const start = ta.selectionStart || 0;
-  const end = ta.selectionEnd || 0;
-  const v = ta.value;
-  ta.value = v.slice(0, start) + text + v.slice(end);
-  ta.focus();
-  ta.dispatchEvent(new Event("input"));
-}
-function wrapSelection(ta, open, close) {
-  const start = ta.selectionStart || 0;
-  const end = ta.selectionEnd || 0;
-  const v = ta.value;
-  const sel = v.slice(start, end) || "text";
-  ta.value = v.slice(0, start) + open + sel + close + v.slice(end);
+  const a = ta.selectionStart || 0, b = ta.selectionEnd || 0, v = ta.value;
+  ta.value = v.slice(0, a) + text + v.slice(b);
   ta.focus();
   ta.dispatchEvent(new Event("input"));
 }
 
 (function () {
-  const bar = $("emojiBar");
   TG_EMOJI_SAMPLES.forEach((e) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.title = e.name + " id=" + e.id;
     btn.textContent = e.fb;
-    btn.onclick = () => {
-      insertAtCursor($("msgValue"), '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ");
-    };
-    bar.appendChild(btn);
+    btn.onclick = () => insertAtCursor($("msgValue"), '<tg-emoji emoji-id="' + e.id + '">' + e.fb + "</tg-emoji> ");
+    $("emojiBar").appendChild(btn);
   });
 })();
 
@@ -339,11 +235,6 @@ document.querySelectorAll("nav .tab").forEach((btn) => {
   });
 });
 
-$("btnSaveToken").onclick = () => {
-  setToken($("token").value.trim());
-  toast("Token saved");
-};
-
 function fillLinks(data) {
   $("affiliate_link_base").value = data.affiliate_link_base || "";
   $("vip_group_link").value = data.vip_group_link || "";
@@ -351,12 +242,11 @@ function fillLinks(data) {
   $("public_channel").value = data.public_channel || "";
   $("site_id").value = data.site_id || "1";
   $("welcome_photo_url").value = data.welcome_photo_url || "";
-  $("affiliate_preview").textContent =
-    "Preview (same for all): " + (data.affiliate_link_preview || "");
+  $("affiliate_preview").textContent = "Preview: " + (data.affiliate_link_preview || "");
 }
 function fillButtons(data) {
   const box = $("buttonsBox");
-  box.innerHTML = "<h2>Buttons BN / EN + style + emoji id</h2>";
+  box.innerHTML = "";
   BUTTON_KEYS.forEach((k) => {
     const bn = data.buttons[k + "_bn"] || "";
     const en = data.buttons[k + "_en"] || "";
@@ -364,19 +254,17 @@ function fillButtons(data) {
     const icon = data.buttons["icon_" + k] || "";
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `
-      <strong>${k}</strong>
+    div.innerHTML = `<strong>${k}</strong>
       <div class="grid 2" style="margin-top:8px">
-        <div class="field"><label>BN</label><input data-k="${k}_bn" value="${bn.replace(/"/g, """)}" style="width:100%"></div>
-        <div class="field"><label>EN</label><input data-k="${k}_en" value="${en.replace(/"/g, """)}" style="width:100%"></div>
+        <div class="field"><label>BN</label><input data-k="${k}_bn" value="${bn.replace(/"/g,""")}" style="width:100%"></div>
+        <div class="field"><label>EN</label><input data-k="${k}_en" value="${en.replace(/"/g,""")}" style="width:100%"></div>
         <div class="field"><label>Style</label>
           <select data-k="style_${k}">
-            <option value="primary" ${style === "primary" ? "selected" : ""}>primary</option>
-            <option value="success" ${style === "success" ? "selected" : ""}>success</option>
-            <option value="danger" ${style === "danger" ? "selected" : ""}>danger</option>
-          </select>
-        </div>
-        <div class="field"><label>Custom emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%"></div>
+            <option value="primary" ${style==="primary"?"selected":""}>primary</option>
+            <option value="success" ${style==="success"?"selected":""}>success</option>
+            <option value="danger" ${style==="danger"?"selected":""}>danger</option>
+          </select></div>
+        <div class="field"><label>Emoji id</label><input data-k="icon_${k}" value="${icon}" style="width:100%"></div>
       </div>`;
     box.appendChild(div);
   });
@@ -384,59 +272,52 @@ function fillButtons(data) {
 
 $("btnSaveLinks").onclick = async () => {
   try {
-    await api("/api/settings/bulk", {
-      method: "POST",
-      body: JSON.stringify({
-        items: {
-          affiliate_link_base: $("affiliate_link_base").value,
-          vip_group_link: $("vip_group_link").value,
-          min_deposit: $("min_deposit").value,
-          public_channel: $("public_channel").value,
-          site_id: $("site_id").value,
-          welcome_photo_url: $("welcome_photo_url").value,
-        },
-      }),
-    });
+    await api("/api/settings/bulk", { method: "POST", body: JSON.stringify({ items: {
+      affiliate_link_base: $("affiliate_link_base").value,
+      vip_group_link: $("vip_group_link").value,
+      min_deposit: $("min_deposit").value,
+      public_channel: $("public_channel").value,
+      site_id: $("site_id").value,
+      welcome_photo_url: $("welcome_photo_url").value,
+    }})});
     toast("Links saved");
   } catch (e) { alert(e.message); }
 };
-
 $("btnSaveButtons").onclick = async () => {
   try {
     const items = {};
-    document.querySelectorAll("#buttonsBox [data-k]").forEach((el) => {
-      items[el.getAttribute("data-k")] = el.value;
-    });
+    document.querySelectorAll("#buttonsBox [data-k]").forEach((el) => { items[el.getAttribute("data-k")] = el.value; });
     await api("/api/settings/bulk", { method: "POST", body: JSON.stringify({ items }) });
     toast("Buttons saved");
   } catch (e) { alert(e.message); }
 };
 
 function loadMsgEditor() {
-  const key = $("msgKey").value;
-  const lang = $("msgLang").value;
-  const sk = "msg_" + key + "_" + lang;
+  const sk = "msg_" + $("msgKey").value + "_" + $("msgLang").value;
   $("msgValue").value = messagesCache[sk] || "";
   $("msgSource").textContent = "Source: " + (messagesCache[sk + "__source"] || "-");
   $("msgPreview").innerHTML = renderTgHtml($("msgValue").value);
 }
 $("msgKey").onchange = loadMsgEditor;
 $("msgLang").onchange = loadMsgEditor;
-$("msgValue").oninput = () => {
-  $("msgPreview").innerHTML = renderTgHtml($("msgValue").value);
+$("msgValue").oninput = () => { $("msgPreview").innerHTML = renderTgHtml($("msgValue").value); };
+$("btnWrapBold").onclick = () => {
+  const ta = $("msgValue"); const a = ta.selectionStart, b = ta.selectionEnd;
+  const sel = ta.value.slice(a, b) || "text";
+  ta.value = ta.value.slice(0, a) + "<b>" + sel + "</b>" + ta.value.slice(b);
+  ta.dispatchEvent(new Event("input"));
 };
-$("btnWrapBold").onclick = () => wrapSelection($("msgValue"), "<b>", "</b>");
-$("btnWrapCode").onclick = () => wrapSelection($("msgValue"), "<code>", "</code>");
+$("btnWrapCode").onclick = () => {
+  const ta = $("msgValue"); const a = ta.selectionStart, b = ta.selectionEnd;
+  const sel = ta.value.slice(a, b) || "code";
+  ta.value = ta.value.slice(0, a) + "<code>" + sel + "</code>" + ta.value.slice(b);
+  ta.dispatchEvent(new Event("input"));
+};
 $("btnSaveMsg").onclick = async () => {
   try {
-    await api("/api/messages", {
-      method: "POST",
-      body: JSON.stringify({
-        key: $("msgKey").value,
-        lang: $("msgLang").value,
-        value: $("msgValue").value,
-      }),
-    });
+    await api("/api/messages", { method: "POST", body: JSON.stringify({
+      key: $("msgKey").value, lang: $("msgLang").value, value: $("msgValue").value,
+    })});
     toast("Message saved");
     await loadAll();
   } catch (e) { alert(e.message); }
@@ -444,23 +325,16 @@ $("btnSaveMsg").onclick = async () => {
 
 $("btnAiGen").onclick = async () => {
   try {
-    const data = await api("/api/ai/caption", {
-      method: "POST",
-      body: JSON.stringify({
-        topic: $("aiTopic").value,
-        lang: $("aiLang").value,
-        tone: $("aiTone").value,
-        include_tg_emoji: $("aiPrem").checked,
-      }),
-    });
+    const data = await api("/api/ai/caption", { method: "POST", body: JSON.stringify({
+      topic: $("aiTopic").value, lang: $("aiLang").value, tone: $("aiTone").value,
+      include_tg_emoji: $("aiPrem").checked,
+    })});
     $("aiOut").value = data.html || "";
     $("aiPreview").innerHTML = renderTgHtml(data.html || "");
-    toast("Generated (" + data.source + ")");
+    toast("Generated");
   } catch (e) { alert(e.message); }
 };
-$("aiOut").oninput = () => {
-  $("aiPreview").innerHTML = renderTgHtml($("aiOut").value);
-};
+$("aiOut").oninput = () => { $("aiPreview").innerHTML = renderTgHtml($("aiOut").value); };
 $("btnAiToWelcome").onclick = () => {
   document.querySelector('[data-tab="messages"]').click();
   $("msgKey").value = "welcome";
@@ -474,10 +348,10 @@ async function loadStats() {
   $("statsBox").innerHTML = `
     <div><div class="muted">Users</div><div class="stat">${s.total_users}</div></div>
     <div><div class="muted">Verified</div><div class="stat">${s.verified}</div></div>
-    <div><div class="muted">Joined VIP</div><div class="stat">${s.joined}</div></div>
+    <div><div class="muted">Joined</div><div class="stat">${s.joined}</div></div>
     <div><div class="muted">Postbacks</div><div class="stat">${s.postbacks}</div></div>
-    <div><div class="muted">Total deposit</div><div class="stat">$${Number(s.total_deposit).toFixed(2)}</div></div>
-    <div><div class="muted">Min deposit</div><div class="stat">$${s.min_deposit}</div></div>`;
+    <div><div class="muted">Deposit</div><div class="stat">$${Number(s.total_deposit).toFixed(2)}</div></div>
+    <div><div class="muted">Min dep</div><div class="stat">$${s.min_deposit}</div></div>`;
   const u = await api("/api/users?limit=40");
   $("usersBody").innerHTML = (u.users || []).map((x) => `
     <tr>
@@ -496,8 +370,7 @@ async function loadAll() {
   fillButtons(data);
   const msgs = await api("/api/messages");
   messagesCache = msgs.messages || {};
-  messageKeys = msgs.keys || [];
-  $("msgKey").innerHTML = messageKeys.map((k) => `<option value="${k}">${k}</option>`).join("");
+  $("msgKey").innerHTML = (msgs.keys || []).map((k) => `<option value="${k}">${k}</option>`).join("");
   loadMsgEditor();
   await loadStats();
   toast("Loaded");
@@ -505,22 +378,51 @@ async function loadAll() {
 
 $("btnLoad").onclick = () => loadAll().catch((e) => alert(e.message));
 
-// Token: URL ?token= → localStorage → input
-(function initAuth() {
-  const q = new URLSearchParams(location.search).get("token");
-  if (q) {
-    setToken(q);
-    // clean token from address bar without reload
-    try {
-      const u = new URL(location.href);
-      u.searchParams.delete("token");
-      history.replaceState({}, "", u.pathname + u.search);
-    } catch (_) {}
-  } else {
-    $("token").value = localStorage.getItem("admin_token") || "";
+async function authTelegram() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const initData = (tg && tg.initData) || "";
+  if (!initData) {
+    // try existing session
+    if (sessionKey) {
+      try {
+        await api("/api/ping");
+        $("authStatus").textContent = "Session OK";
+        $("authStatus").className = "ok";
+        $("app").classList.remove("hidden");
+        await loadAll();
+        return;
+      } catch (_) {}
+    }
+    $("authStatus").textContent = "Open from Telegram /admin → Web App";
+    $("authStatus").className = "err";
+    $("gate").classList.remove("hidden");
+    return;
   }
-  if (token()) loadAll().catch(() => {});
-})();
+  try {
+    const r = await fetch("/admin/api/auth/telegram", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ init_data: initData }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || "Auth failed");
+    sessionKey = data.session;
+    localStorage.setItem("admin_session", sessionKey);
+    const u = data.user || {};
+    $("authStatus").textContent = "✅ Admin " + (u.first_name || "") + " (" + u.id + ")";
+    $("authStatus").className = "ok";
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    await loadAll();
+  } catch (e) {
+    $("authStatus").textContent = e.message || "Auth failed";
+    $("authStatus").className = "err";
+    $("gate").classList.remove("hidden");
+    $("gateMsg").textContent = e.message || "Not allowed";
+  }
+}
+
+authTelegram();
 </script>
 </body>
 </html>
