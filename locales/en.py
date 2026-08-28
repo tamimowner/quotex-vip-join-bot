@@ -23,37 +23,40 @@ TEXTS = {
     ),
 
     "main_menu": "Main Menu",
-    "btn_premium": "🎁 VIP Join",
-    "btn_create_account": "⭐ New Account",
-    "btn_delete_account": "❌ Delete Account",
-    "btn_public": "🌐 All Social Media",
-    "btn_support": "📢 Support",
-    "btn_status": "📊 Status",
-    "btn_back": "⬅️ Back",
+
+    # Button labels — NO normal emoji (add custom via Admin)
+    "btn_premium": "VIP Join",
+    "btn_create_account": "New Account",
+    "btn_delete_account": "Delete Account",
+    "btn_public": "All Social Media",
+    "btn_support": "Support",
+    "btn_status": "Status",
+    "btn_back": "Back",
     "btn_tutorial": "Watch Tutorial",
     "btn_open_account": "Open Quotex Account",
-    "btn_register": "📝 Register & Deposit",
-    "btn_settings": "⚙️ Settings",
-    "btn_change_language": "🌐 Change Language",
+    "btn_register": "Register & Deposit",
+    "btn_settings": "Settings",
+    "btn_change_language": "Change Language",
+
     "settings_title": (
-        "⚙️ <b>Settings</b>\n\n"
+        "<b>Settings</b>\n\n"
         "You can change language here.\n"
         "More options are below."
     ),
 
     "invalid_trader_id": (
-        "❌ Invalid format.\n"
+        "Invalid format.\n"
         "Send only an English <b>6–12 digit</b> Trader ID.\n"
         "Example: <code>12345678</code>"
     ),
     "trader_id_saved": (
-        "✅ Trader ID saved: <code>{trader_id}</code>"
+        "Trader ID saved: <code>{trader_id}</code>"
     ),
     "account_created_success": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
         "Your account has been created successfully "
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
-        "🆔 Trader ID: <code>{trader_id}</code>"
+        "Trader ID: <code>{trader_id}</code>"
     ),
     "account_ok_need_deposit": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
@@ -66,7 +69,7 @@ TEXTS = {
         '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
     "deposit_received_need_more": (
-        "💰 Deposit received: <b>${amount:.2f}</b>\n"
+        "Deposit received: <b>${amount:.2f}</b>\n"
         "Total: <b>${total:.2f}</b> / Required: <b>${min_deposit}</b>\n\n"
         "Please deposit more, then send Trader ID or wait."
     ),
@@ -97,17 +100,17 @@ TEXTS = {
     ),
 
     "premium_info": (
-        "🎁 <b>Premium / VIP Join Process</b>\n\n"
-        "1️⃣ Click Register below\n"
-        "2️⃣ Create a <b>new</b> Quotex account\n"
-        "3️⃣ Make the minimum deposit (if required)\n"
-        "4️⃣ Send Trader ID to the bot\n"
-        "5️⃣ Get VIP group link after verification\n\n"
-        "⚠️ Use only our Affiliate Link.\n"
+        "<b>Premium / VIP Join Process</b>\n\n"
+        "1. Click Register below\n"
+        "2. Create a <b>new</b> Quotex account\n"
+        "3. Make the minimum deposit (if required)\n"
+        "4. Send Trader ID to the bot\n"
+        "5. Get VIP group link after verification\n\n"
+        "Use only our Affiliate Link.\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
-    "waiting_deposit": "⏳ Waiting for your deposit...",
-    "already_verified": "✅ You are already verified!",
+    "waiting_deposit": "Waiting for your deposit...",
+    "already_verified": "You are already verified!",
 
     "invite_ready": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
@@ -126,32 +129,51 @@ TEXTS = {
         "Questions? Contact: @SK_SupportOfficial"
     ),
 
-    "already_joined": "✅ You have already joined the VIP group.",
-    "status_title": "📊 <b>Your Account Status</b>\n\n",
-    "status_not_verified": "❌ Not verified yet. Register with our link and deposit first.",
+    "already_joined": "You have already joined the VIP group.",
+
+    "status_title": (
+        '<tg-emoji emoji-id="6131664675214987967">📊</tg-emoji> '
+        "<b>Your Account Status</b>\n\n"
+    ),
+    "status_not_verified": "Not verified yet. Register with our link and deposit first.",
     "status_verified": (
-        "✅ Status: <b>Verified</b>\n"
-        "🆔 Trader ID: <code>{trader_id}</code>\n"
-        "🌍 Country: {country}\n"
-        "💰 Total Deposit: ${total_deposit:.2f}\n"
-        "💸 Total Withdraw: ${total_withdraw:.2f}\n"
-        "📥 Last Deposit: ${last_deposit:.2f}\n"
-        "📅 Verified at: {verified_at}\n"
-        "👥 Joined VIP: {joined}"
+        '<tg-emoji emoji-id="5310024172926161438">🆔</tg-emoji> '
+        "Trader ID: <code>{trader_id}</code>\n"
+        '<tg-emoji emoji-id="6084845507304229827">🌍</tg-emoji> '
+        "Country: {country}\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "Verified: Yes\n"
+        '<tg-emoji emoji-id="5472279086657199080">📅</tg-emoji> '
+        "Verified at: {verified_at}\n"
+        '<tg-emoji emoji-id="5309844291105869907">👥</tg-emoji> '
+        "Joined VIP: {joined}\n"
+        '<tg-emoji emoji-id="6064542166103887096">💰</tg-emoji> '
+        "Total Deposit: ${total_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6131928704034542549">📥</tg-emoji> '
+        "Last Deposit: ${last_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6129731974291527294">💸</tg-emoji> '
+        "Total Withdraw: ${total_withdraw:.2f}"
     ),
     "status_full": (
-        "🆔 Trader ID: <code>{trader_id}</code>\n"
-        "🌍 Country: {country}\n"
-        "✅ Verified: {verified}\n"
-        "📅 Verified at: {verified_at}\n"
-        "👥 Joined VIP: {joined}\n"
-        "💰 Total Deposit: ${total_deposit:.2f}\n"
-        "📥 Last Deposit: ${last_deposit:.2f}\n"
-        "💸 Total Withdraw: ${total_withdraw:.2f}\n"
-        "🎯 Minimum required: ${min_deposit}"
+        '<tg-emoji emoji-id="5310024172926161438">🆔</tg-emoji> '
+        "Trader ID: <code>{trader_id}</code>\n"
+        '<tg-emoji emoji-id="6084845507304229827">🌍</tg-emoji> '
+        "Country: {country}\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "Verified: {verified}\n"
+        '<tg-emoji emoji-id="5472279086657199080">📅</tg-emoji> '
+        "Verified at: {verified_at}\n"
+        '<tg-emoji emoji-id="5309844291105869907">👥</tg-emoji> '
+        "Joined VIP: {joined}\n"
+        '<tg-emoji emoji-id="6064542166103887096">💰</tg-emoji> '
+        "Total Deposit: ${total_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6131928704034542549">📥</tg-emoji> '
+        "Last Deposit: ${last_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6129731974291527294">💸</tg-emoji> '
+        "Total Withdraw: ${total_withdraw:.2f}"
     ),
-    "history_title": "📜 <b>History (Postback)</b>",
-    "history_empty": "📜 History: no postback yet.",
+    "history_title": "History (Postback)",
+    "history_empty": "History: no postback yet.",
 
     "public_channel": (
         '<tg-emoji emoji-id="5856956664292315353">📢</tg-emoji> '
@@ -201,20 +223,36 @@ TEXTS = {
     ),
 
     "support": "Any problem? Contact admin: @TEADMIN9",
+
     "create_account_guide": (
-        "⭐ <b>How to create new Quotex account</b>\n\n"
-        "1. Click <b>Register</b> below\n"
-        "2. Fill form with new email/phone\n"
-        "3. Complete registration\n"
-        "4. Make minimum deposit (if required)\n"
-        "5. Send Trader ID to the bot\n\n"
-        "Only our Affiliate Link (lid=<code>1480996</code>) is accepted."
+        '<tg-emoji emoji-id="6129909635613726974">⭐</tg-emoji> '
+        "<b>How to create a new Quotex account</b>\n\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "Click the Register button below\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "Fill the form with a new email/phone\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "Complete registration\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "Make minimum deposit <b>${min_deposit}</b>\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "Send Trader ID to the bot\n\n"
+        '<tg-emoji emoji-id="5938264290740933445">🔗</tg-emoji> '
+        "Only our Affiliate Link = {register_url}\n"
+        "is accepted. "
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji>'
     ),
+
     "delete_account_guide": (
-        "❌ <b>How to delete old Quotex account</b>\n\n"
-        "1. Login to old account\n"
-        "2. Profile / Settings\n"
-        "3. Request deletion\n"
-        "4. Create new account with our link"
+        '<tg-emoji emoji-id="5298742255912235479">❌</tg-emoji> '
+        "<b>How to delete old Quotex account</b>\n\n"
+        '<tg-emoji emoji-id="5235547326889608764">1</tg-emoji> '
+        "Login to old account\n"
+        '<tg-emoji emoji-id="5235547326889608764">2</tg-emoji> '
+        "Profile / Settings\n"
+        '<tg-emoji emoji-id="5235919365546724452">3</tg-emoji> '
+        "Request account deletion\n"
+        '<tg-emoji emoji-id="5238105937692085546">4</tg-emoji> '
+        "Create a new account with our link"
     ),
 }
