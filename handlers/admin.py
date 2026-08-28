@@ -4,7 +4,6 @@ from aiogram.types import (
     CallbackQuery,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    WebAppInfo,
 )
 from aiogram.enums import MessageEntityType
 from aiogram.filters import Command, BaseFilter
@@ -53,7 +52,6 @@ def _web_admin_base_url() -> str:
 
 
 def _web_admin_url() -> str:
-    """No token in URL — WebApp verifies Telegram user via initData + ADMIN_IDS."""
     base = _web_admin_base_url()
     if not base:
         return ""
@@ -69,8 +67,7 @@ def admin_choose_kb() -> InlineKeyboardMarkup:
     rows = []
     web_url = _web_admin_url()
     if web_url:
-        rows.append([InlineKeyboardButton(text="🌐 Web App খুলুন", web_app=WebAppInfo(url=web_url))])
-        rows.append([InlineKeyboardButton(text="ℹ️ Web App info", callback_data="adm:choose:web", style="success")])
+        rows.append([InlineKeyboardButton(text="🌐 Website Admin Panel", url=web_url)])
     else:
         rows.append([InlineKeyboardButton(text="🌐 Web Panel (URL সেট করুন)", callback_data="adm:choose:web", style="success")])
     rows.append([InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")])
@@ -81,7 +78,7 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
     rows = []
     web_url = _web_admin_url()
     if web_url:
-        rows.append([InlineKeyboardButton(text="🌐 Web App খুলুন", web_app=WebAppInfo(url=web_url))])
+        rows.append([InlineKeyboardButton(text="🌐 Website Admin", url=web_url)])
     rows.extend([
         [InlineKeyboardButton(text="💰 মিনিমাম ডিপোজিট", callback_data="adm:mindep", style="success")],
         [InlineKeyboardButton(text="🖼 ওয়েলকাম ফটো", callback_data="adm:photo", style="success")],
@@ -112,7 +109,8 @@ async def cmd_admin(message: Message):
     min_dep = await get_min_deposit()
     web_url = _web_admin_url()
     extra = (
-        "\n✅ Web App খুললে টেলিগ্রাম ID দিয়ে অটো লগইন (টোকেন লাগে না)।"
+        f"\n🌐 Website: <code>{web_url}</code>\n"
+        "লগইন: <code>ADMIN_USERNAME</code> + <code>ADMIN_PASSWORD</code>"
         if web_url
         else "\n⚠️ Railway এ <code>WEB_BASE_URL</code> সেট করুন।"
     )
@@ -120,7 +118,7 @@ async def cmd_admin(message: Message):
         "🛠 <b>অ্যাডমিন প্যানেল</b>\n\n"
         f"💰 মিনিমাম ডিপোজিট: <b>${min_dep:.0f}</b>\n"
         f"🆔 <code>{message.from_user.id}</code>\n\n"
-        "🌐 <b>Web App</b> — পুরো কন্ট্রোল\n"
+        "🌐 <b>Website Admin</b> — ব্রাউজারে ইউজার/পাস লগইন\n"
         "⌨️ <b>Command Panel</b> — চ্যাট মেনু"
         + extra,
         reply_markup=admin_choose_kb(),
@@ -149,13 +147,13 @@ async def adm_choose_web(callback: CallbackQuery):
     web_url = _web_admin_url()
     if web_url:
         text = (
-            "🌐 <b>Web Admin</b>\n\n"
-            "শুধু <code>ADMIN_IDS</code> এর ইউজার লগইন করতে পারবে।\n"
-            "Web App বাটনে চাপলে টেলিগ্রাম অটো ভেরিফাই করবে — <b>টোকেন লাগে না</b>।\n\n"
-            f"URL: <code>{web_url}</code>"
+            "🌐 <b>Website Admin</b>\n\n"
+            "ব্রাউজারে খুলে Username + Password দিয়ে লগইন করুন।\n\n"
+            f"URL: <code>{web_url}</code>\n"
+            "Env: <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>"
         )
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🌐 Web App খুলুন", web_app=WebAppInfo(url=web_url))],
+            [InlineKeyboardButton(text="🌐 Open Website", url=web_url)],
             [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
             [InlineKeyboardButton(text="◀️ ফিরে", callback_data="adm:choose", style="primary")],
         ])
@@ -163,7 +161,7 @@ async def adm_choose_web(callback: CallbackQuery):
         text = (
             "⚠️ <code>WEB_BASE_URL</code> সেট নেই।\n\n"
             "Railway: <code>WEB_BASE_URL=https://your-app.up.railway.app</code>\n"
-            "এবং <code>ADMIN_IDS</code> = আপনার Telegram numeric ID"
+            "এবং <code>ADMIN_USERNAME</code> + <code>ADMIN_PASSWORD</code>"
         )
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="⌨️ Command Panel", callback_data="adm:choose:cmd", style="primary")],
