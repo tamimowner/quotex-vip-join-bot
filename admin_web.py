@@ -77,7 +77,7 @@ SETTING_KEYS = [
     "welcome_photo_url",
 ]
 
-SESSION_TTL = 7 * 24 * 3600  # 7 days
+SESSION_TTL = 7 * 24 * 3600
 
 
 def _session_secret() -> bytes:
@@ -113,7 +113,6 @@ def _verify_session(session: str | None) -> int | None:
 
 
 def _validate_webapp_init_data(init_data: str) -> dict[str, Any] | None:
-    """Validate Telegram WebApp initData; return parsed user dict or None."""
     if not init_data or not settings.BOT_TOKEN:
         return None
     try:
@@ -128,7 +127,6 @@ def _validate_webapp_init_data(init_data: str) -> dict[str, Any] | None:
     calc = hmac.new(secret_key, data_check.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(calc, received_hash):
         return None
-    # optional freshness (24h)
     try:
         auth_date = int(pairs.get("auth_date") or 0)
         if auth_date and abs(time.time() - auth_date) > 86400:
@@ -145,11 +143,7 @@ def _validate_webapp_init_data(init_data: str) -> dict[str, Any] | None:
 
 
 def _legacy_token() -> str:
-    return (
-        os.getenv("ADMIN_WEB_TOKEN", "")
-        or os.getenv("POSTBACK_SECRET", "")
-        or ""
-    )
+    return os.getenv("ADMIN_WEB_TOKEN", "") or os.getenv("POSTBACK_SECRET", "") or ""
 
 
 async def require_admin(
@@ -158,17 +152,15 @@ async def require_admin(
     x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
     token: str | None = Query(default=None),
 ):
-    # 1) Session from Telegram-verified login
     sess = x_admin_session or request.cookies.get("admin_session")
     uid = _verify_session(sess)
     if uid is not None:
         return uid
 
-    # 2) Optional legacy token (browser fallback)
     expected = _legacy_token()
     got = x_admin_token or token or request.cookies.get("admin_token")
     if expected and got and hmac.compare_digest(str(got), str(expected)):
-        return 0  # token auth, no specific user
+        return 0
 
     raise HTTPException(
         status_code=401,
@@ -214,7 +206,6 @@ async def admin_page():
 
 @router.post("/api/auth/telegram")
 async def api_auth_telegram(body: TgAuthBody):
-    """Verify WebApp initData; only ADMIN_IDS may get a session."""
     user = _validate_webapp_init_data(body.init_data or "")
     if not user:
         raise HTTPException(401, "Invalid Telegram initData")
@@ -288,7 +279,7 @@ async def api_get_messages(_: int = Depends(require_admin)):
         for lang, defaults in (("bn", BN_TEXTS), ("en", EN_TEXTS)):
             sk = f"msg_{key}_{lang}"
             custom = await get_setting(sk, "")
-            fallback = defaults.get(key, "")")
+            fallback = defaults.get(key, "")
             out[sk] = custom if custom else fallback
             out[f"{sk}__source"] = "db" if custom else "locale"
     return {"keys": MESSAGE_KEYS, "messages": out}
@@ -301,9 +292,8 @@ async def api_set_message(body: MessageBody, _: int = Depends(require_admin)):
         raise HTTPException(400, "lang must be bn or en")
     if body.key not in MESSAGE_KEYS:
         raise HTTPException(400, f"key must be one of {MESSAGE_KEYS}")
-    sk = f"msg_{body.key}_{lang}"
-    await set_setting(sk, body.value)
-    return {"ok": True, "key": sk}
+    await set_setting(f"msg_{body.key}_{lang}", body.value)
+    return {"ok": True, "key": f"msg_{body.key}_{lang}"}
 
 
 @router.get("/api/stats")
@@ -381,21 +371,11 @@ async def api_ai_caption(body: CaptionRequest, _: int = Depends(require_admin)):
     lang = body.lang if body.lang in ("bn", "en") else "bn"
     prem = body.include_tg_emoji
     err = None
-
     openai_key = os.getenv("OPENAI_API_KEY", "")
     if openai_key:
         try:
             import httpx
 
-            system = (
-                "You write Telegram bot messages in HTML parse_mode. "
-                "Use <b>, <i>, <code>, <a href>, <tg-emoji emoji-id=\"ID\">fb</tg-emoji>. "
-                "Under 800 chars. No markdown."
-            )
-            user_prompt = (
-                f"Language: {lang}. Tone: {body.tone}. Topic: {topic}. "
-                f"Premium tg-emoji: {prem}."
-            )
             async with httpx.AsyncClient(timeout=30) as client:
                 r = await client.post(
                     "https://api.openai.com/v1/chat/completions",
@@ -403,31 +383,35 @@ async def api_ai_caption(body: CaptionRequest, _: int = Depends(require_admin)):
                     json={
                         "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
                         "messages": [
-                            {"role": "system", "content": system},
-                            {"role": "user", "content": user_prompt},
+                            {
+                                "role": "system",
+                                "content": "Telegram HTML captions only. Under 800 chars.",
+                            },
+                            {
+                                "role": "user",
+                                "content": f"lang={lang} tone={body.tone} topic={topic} premium={prem}",
+                            },
                         ],
-                        "temperature": 0.7,
                     },
                 )
                 r.raise_for_status()
-                text = r.json()["choices"][0]["message"]["content"].strip()
-                return {"ok": True, "source": "openai", "html": text}
+                return {
+                    "ok": True,
+                    "source": "openai",
+                    "html": r.json()["choices"][0]["message"]["content"].strip(),
+                }
         except Exception as e:
             err = str(e)
 
     if lang == "bn":
         html = (
             f'{_e("wave", prem)} <b>{topic}</b> {_e("spark", prem)}\n\n'
-            f'{_e("megaphone", prem)} VIP চ্যানেলে যোগ দিতে নিচের ধাপগুলো ফলো করুন। {_e("down", prem)}\n\n'
-            f'{_e("pin", prem)} আমাদের Affiliate Link দিয়ে অ্যাকাউন্ট খুলুন।\n\n'
-            f'{_e("warn", prem)} শুধু 6–12 ডিজিটের Trader ID পাঠাবেন।'
+            f'{_e("megaphone", prem)} VIP চ্যানেলে যোগ দিতে ধাপগুলো ফলো করুন। {_e("down", prem)}'
         )
     else:
         html = (
             f'{_e("wave", prem)} Welcome to <b>{topic}</b>! {_e("spark", prem)}\n\n'
-            f'{_e("megaphone", prem)} Follow the steps to join VIP. {_e("down", prem)}\n\n'
-            f'{_e("pin", prem)} Open an account with our Affiliate Link.\n\n'
-            f'{_e("warn", prem)} Send only a 6–12 digit Trader ID.'
+            f'{_e("megaphone", prem)} Follow the steps to join VIP. {_e("down", prem)}'
         )
     return {"ok": True, "source": "template", "html": html, "note": err}
 
