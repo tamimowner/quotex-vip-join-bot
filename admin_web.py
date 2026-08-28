@@ -1,8 +1,8 @@
 """
-Web Admin Panel — normal website login (username + password).
+Web Admin Panel — username + password login.
 Env:
   ADMIN_USERNAME (default: admin)
-  ADMIN_PASSWORD (required; fallback ADMIN_WEB_TOKEN)
+  ADMIN_PASSWORD (default: admin123 if unset)
 """
 from __future__ import annotations
 
@@ -11,11 +11,12 @@ import hmac
 import os
 import secrets
 import time
+import traceback
 from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select, func, desc
 
@@ -77,41 +78,48 @@ SETTING_KEYS = [
 ]
 
 SESSION_TTL = 7 * 24 * 3600
+DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 def _admin_username() -> str:
-    return (os.getenv("ADMIN_USERNAME") or "admin").strip()
+    return (os.getenv("ADMIN_USERNAME") or "admin").strip() or "admin"
 
 
 def _admin_password() -> str:
-    return (
-        (os.getenv("ADMIN_PASSWORD") or "").strip()
-        or (os.getenv("ADMIN_WEB_TOKEN") or "").strip()
-        or (os.getenv("POSTBACK_SECRET") or "").strip()
-    )
+    """Password from env; never empty (falls back to admin123)."""
+    for key in ("ADMIN_PASSWORD", "ADMIN_WEB_TOKEN", "POSTBACK_SECRET"):
+        val = (os.getenv(key) or "").strip()
+        if val:
+            return val
+    return DEFAULT_ADMIN_PASSWORD
 
 
 def _safe_eq(a: str, b: str) -> bool:
-    """Constant-time compare that never raises on length mismatch."""
     a_b = (a or "").encode("utf-8")
     b_b = (b or "").encode("utf-8")
     if len(a_b) != len(b_b):
-        # still run a dummy compare to keep timing flatter
-        hmac.compare_digest(a_b, a_b)
+        try:
+            hmac.compare_digest(a_b, a_b)
+        except Exception:
+            pass
         return False
     return hmac.compare_digest(a_b, b_b)
 
 
 def _session_secret() -> bytes:
-    raw = (settings.BOT_TOKEN or "") + "|" + _admin_password() + "|admin-web"
-    return hashlib.sha256(raw.encode()).digest()
+    try:
+        token = getattr(settings, "BOT_TOKEN", None) or os.getenv("BOT_TOKEN") or ""
+    except Exception:
+        token = os.getenv("BOT_TOKEN") or ""
+    raw = str(token) + "|" + _admin_password() + "|admin-web-v2"
+    return hashlib.sha256(raw.encode("utf-8")).digest()
 
 
 def _make_session(username: str) -> str:
     exp = int(time.time()) + SESSION_TTL
     nonce = secrets.token_hex(8)
     payload = f"{username}:{exp}:{nonce}"
-    sig = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:40]
+    sig = hmac.new(_session_secret(), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:40]
     return f"{payload}:{sig}"
 
 
@@ -129,7 +137,7 @@ def _verify_session(session: str | None) -> str | None:
     if exp < int(time.time()):
         return None
     payload = f"{username}:{exp}:{nonce}"
-    expect = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:40]
+    expect = hmac.new(_session_secret(), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:40]
     if not _safe_eq(expect, sig):
         return None
     if not _safe_eq(username, _admin_username()):
@@ -185,25 +193,66 @@ async def admin_page():
         return HTMLResponse(f.read())
 
 
-@router.post("/api/auth/login")
-async def api_auth_login(body: LoginBody):
-    expected_user = _admin_username()
-    expected_pass = _admin_password()
-    if not expected_pass:
-        raise HTTPException(
-            500,
-            "ADMIN_PASSWORD not set on server. Set ADMIN_PASSWORD in Railway env.",
-        )
-    ok_user = _safe_eq((body.username or "").strip(), expected_user)
-    ok_pass = _safe_eq((body.password or "").strip(), expected_pass)
-    if not (ok_user and ok_pass):
-        raise HTTPException(401, "Wrong username or password")
-    session = _make_session(expected_user)
+@router.get("/api/auth/status")
+async def api_auth_status():
+    """Public: whether login is configured (no secrets)."""
+    custom = bool(
+        (os.getenv("ADMIN_PASSWORD") or "").strip()
+        or (os.getenv("ADMIN_WEB_TOKEN") or "").strip()
+    )
     return {
         "ok": True,
-        "session": session,
-        "user": {"username": expected_user},
+        "username_hint": _admin_username(),
+        "password_from_env": custom,
+        "default_password_if_unset": DEFAULT_ADMIN_PASSWORD if not custom else None,
     }
+
+
+@router.post("/api/auth/login")
+async def api_auth_login(request: Request):
+    """Login — accepts JSON body; never crashes with bare 500."""
+    try:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+
+        username = str(body.get("username") or "").strip()
+        password = str(body.get("password") or "")
+
+        if not username or not password:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Username and password required"},
+            )
+
+        expected_user = _admin_username()
+        expected_pass = _admin_password()
+
+        ok_user = _safe_eq(username, expected_user)
+        ok_pass = _safe_eq(password.strip(), expected_pass)
+
+        if not (ok_user and ok_pass):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Wrong username or password"},
+            )
+
+        session = _make_session(expected_user)
+        return {
+            "ok": True,
+            "session": session,
+            "user": {"username": expected_user},
+        }
+    except Exception as e:
+        print("LOGIN ERROR:")
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Login error: {type(e).__name__}: {e}"},
+        )
 
 
 @router.post("/api/auth/logout")
