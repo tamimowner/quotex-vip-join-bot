@@ -94,11 +94,16 @@ async def menu_premium(callback: CallbackQuery):
     lang = user.language if user else "bn"
 
     if user and user.is_verified:
-        vip_link = await get_vip_group_link() or user.invite_link
+        vip_link = user.invite_link or await get_vip_group_link()
         if vip_link:
             await _safe_edit(
                 callback,
-                await get_message_text(lang, "invite_ready", link=vip_link),
+                await get_message_text(
+                    lang,
+                    "invite_ready",
+                    link=vip_link,
+                    trader_id=user.trader_id or "-",
+                ),
                 reply_markup=await back_keyboard(lang),
             )
             await callback.answer()
