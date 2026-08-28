@@ -28,7 +28,7 @@ BUTTON_MAP = [
     ("btn_premium", "VIP জয়েন বাটন"),
     ("btn_create_account", "নতুন অ্যাকাউন্ট বাটন"),
     ("btn_delete_account", "অ্যাকাউন্ট ডিলিট বাটন"),
-    ("btn_public", "পাবলিক চ্যানেল বাটন"),
+    ("btn_public", "সব সোশ্যাল মিডিয়া বাটন"),
     ("btn_status", "স্ট্যাটাস বাটন"),
     ("btn_support", "সাপোর্ট বাটন"),
     ("btn_register", "রেজিস্টার বাটন"),
@@ -76,6 +76,17 @@ def back_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="মেনু", callback_data="adm:home")]
         ]
     )
+
+
+def _extract_custom_emoji_id(message: Message) -> str | None:
+    """Get first custom_emoji_id from message entities or caption entities."""
+    for ents in (message.entities, message.caption_entities):
+        if not ents:
+            continue
+        for ent in ents:
+            if ent.type == MessageEntityType.CUSTOM_EMOJI and ent.custom_emoji_id:
+                return str(ent.custom_emoji_id)
+    return None
 
 
 class AdminPendingFilter(BaseFilter):
@@ -204,7 +215,11 @@ async def adm_map(callback: CallbackQuery):
     for key, title in BUTTON_MAP:
         bn = await get_button_text(key, "bn")
         en = await get_button_text(key, "en")
-        lines.append(f"<b>{title}</b>\nBN <code>{bn}</code>\nEN <code>{en}</code>\n")
+        icon = await get_setting(f"icon_{key}", "")
+        lines.append(
+            f"<b>{title}</b>\nBN <code>{bn}</code>\nEN <code>{en}</code>\n"
+            f"icon <code>{icon or '-'}</code>\n"
+        )
     await callback.message.edit_text(
         "\n".join(lines)[:4000],
         reply_markup=back_kb(),
@@ -456,7 +471,9 @@ async def adm_icons(callback: CallbackQuery):
     ]
     rows.append([InlineKeyboardButton(text="মেনু", callback_data="adm:home")])
     await callback.message.edit_text(
-        "প্রিমিয়াম ইমোজি:", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
+        "প্রিমিয়াম ইমোজি বাটন সিলেক্ট করুন:\n"
+        "তারপর কাস্টম ইমোজি পাঠান (শুধু ইমোজি)।",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
     )
     await callback.answer()
 
@@ -469,7 +486,11 @@ async def adm_icon_set(callback: CallbackQuery):
     _pending[callback.from_user.id] = f"icon_{key}"
     current = await get_setting(f"icon_{key}", "")
     await callback.message.edit_text(
-        f"{key}\nid: <code>{current or 'নেই'}</code>\nকাস্টম ইমোজি পাঠান / clear",
+        f"<b>{key}</b>\n"
+        f"বর্তমান id: <code>{current or 'নেই'}</code>\n\n"
+        "এখন <b>কাস্টম প্রিমিয়াম ইমোজি</b> পাঠান\n"
+        "অথবা শুধু সংখ্যা id পাঠান\n"
+        "মুছতে: <code>clear</code>",
         parse_mode="HTML",
         reply_markup=back_kb(),
     )
@@ -493,7 +514,20 @@ async def adm_set_key(callback: CallbackQuery):
 
 @router.message(AdminPendingFilter(), F.photo)
 async def admin_photo_input(message: Message):
-    if _pending.get(message.from_user.id) != "welcome_photo":
+    key = _pending.get(message.from_user.id)
+    if key and key.startswith("icon_"):
+        # photo with caption emoji? try extract from caption
+        emoji_id = _extract_custom_emoji_id(message)
+        if emoji_id:
+            _pending.pop(message.from_user.id, None)
+            await set_setting(key, emoji_id)
+            await message.answer(
+                f"সেভ <code>{emoji_id}</code>",
+                reply_markup=admin_menu_kb(),
+                parse_mode="HTML",
+            )
+            return
+    if key != "welcome_photo":
         return
     _pending.pop(message.from_user.id, None)
     await set_setting("welcome_photo_file_id", message.photo[-1].file_id)
@@ -501,11 +535,51 @@ async def admin_photo_input(message: Message):
     await message.answer("ফটো সেভ হয়েছে", reply_markup=admin_menu_kb())
 
 
-@router.message(AdminPendingFilter(), F.text)
-async def admin_text_input(message: Message):
+@router.message(AdminPendingFilter())
+async def admin_any_input(message: Message):
+    """Handle text + pure custom-emoji messages for pending admin actions."""
     uid = message.from_user.id
-    key = _pending.pop(uid)
-    value = (message.text or "").strip()
+    key = _pending.get(uid)
+    if not key:
+        return
+
+    value = (message.text or message.caption or "").strip()
+
+    # ----- icon set (custom emoji) -----
+    if key.startswith("icon_"):
+        if value.lower() == "clear":
+            _pending.pop(uid, None)
+            await set_setting(key, "")
+            await message.answer("ক্লিয়ার", reply_markup=admin_menu_kb())
+            return
+
+        emoji_id = _extract_custom_emoji_id(message)
+        if not emoji_id and value.isdigit() and len(value) >= 10:
+            emoji_id = value
+
+        if not emoji_id:
+            await message.answer(
+                "কাস্টম প্রিমিয়াম ইমোজি পাঠান (একটা ইমোজি),\n"
+                "অথবা শুধু emoji id সংখ্যা, অথবা <code>clear</code>",
+                parse_mode="HTML",
+            )
+            return
+
+        _pending.pop(uid, None)
+        await set_setting(key, emoji_id)
+        await message.answer(
+            f"ইমোজি সেভ হয়েছে\n<code>{key}</code> = <code>{emoji_id}</code>\n\n"
+            "/start দিয়ে মেনু চেক করুন।",
+            reply_markup=admin_menu_kb(),
+            parse_mode="HTML",
+        )
+        return
+
+    # below only text handlers
+    if not value and not message.photo:
+        return
+
+    _pending.pop(uid, None)
 
     if key == "min_deposit":
         try:
@@ -550,31 +624,6 @@ async def admin_text_input(message: Message):
             reply_markup=admin_menu_kb(),
             parse_mode="HTML",
             disable_web_page_preview=True,
-        )
-        return
-
-    if key.startswith("icon_"):
-        if value.lower() == "clear":
-            await set_setting(key, "")
-            await message.answer("ক্লিয়ার", reply_markup=admin_menu_kb())
-            return
-        emoji_id = None
-        if message.entities:
-            for ent in message.entities:
-                if ent.type == MessageEntityType.CUSTOM_EMOJI and ent.custom_emoji_id:
-                    emoji_id = str(ent.custom_emoji_id)
-                    break
-        if not emoji_id and value.isdigit() and len(value) >= 10:
-            emoji_id = value
-        if not emoji_id:
-            _pending[uid] = key
-            await message.answer("কাস্টম ইমোজি দরকার")
-            return
-        await set_setting(key, emoji_id)
-        await message.answer(
-            f"সেভ <code>{emoji_id}</code>",
-            reply_markup=admin_menu_kb(),
-            parse_mode="HTML",
         )
         return
 
