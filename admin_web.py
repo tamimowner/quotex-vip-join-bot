@@ -1,13 +1,19 @@
 """
-Web Admin Panel API for Quotex VIP Join Bot.
-URL: /admin  (HTML)  |  /admin/api/*  (JSON)
-Auth: header X-Admin-Token or query ?token=  (ADMIN_WEB_TOKEN env)
+Web Admin Panel API.
+Auth priority:
+  1) Telegram WebApp initData → user id in ADMIN_IDS
+  2) Optional fallback: ADMIN_WEB_TOKEN (browser only)
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import os
+import time
 from datetime import datetime
 from typing import Any
+from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -32,7 +38,6 @@ from locales.en import TEXTS as EN_TEXTS
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# All user-facing captions / page bodies (HTML + tg-emoji)
 MESSAGE_KEYS = [
     "welcome",
     "premium_info",
@@ -72,26 +77,107 @@ SETTING_KEYS = [
     "welcome_photo_url",
 ]
 
+SESSION_TTL = 7 * 24 * 3600  # 7 days
 
-def _admin_token() -> str:
+
+def _session_secret() -> bytes:
+    raw = (settings.BOT_TOKEN or "") + "|admin-session"
+    return hashlib.sha256(raw.encode()).digest()
+
+
+def _make_session(user_id: int) -> str:
+    exp = int(time.time()) + SESSION_TTL
+    payload = f"{user_id}:{exp}"
+    sig = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    return f"{payload}:{sig}"
+
+
+def _verify_session(session: str | None) -> int | None:
+    if not session or session.count(":") != 2:
+        return None
+    uid_s, exp_s, sig = session.split(":", 2)
+    try:
+        uid = int(uid_s)
+        exp = int(exp_s)
+    except ValueError:
+        return None
+    if exp < int(time.time()):
+        return None
+    payload = f"{uid}:{exp}"
+    expect = hmac.new(_session_secret(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    if not hmac.compare_digest(expect, sig):
+        return None
+    if uid not in settings.admin_ids:
+        return None
+    return uid
+
+
+def _validate_webapp_init_data(init_data: str) -> dict[str, Any] | None:
+    """Validate Telegram WebApp initData; return parsed user dict or None."""
+    if not init_data or not settings.BOT_TOKEN:
+        return None
+    try:
+        pairs = dict(parse_qsl(init_data, keep_blank_values=True))
+    except Exception:
+        return None
+    received_hash = pairs.pop("hash", None)
+    if not received_hash:
+        return None
+    data_check = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
+    secret_key = hmac.new(b"WebAppData", settings.BOT_TOKEN.encode(), hashlib.sha256).digest()
+    calc = hmac.new(secret_key, data_check.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calc, received_hash):
+        return None
+    # optional freshness (24h)
+    try:
+        auth_date = int(pairs.get("auth_date") or 0)
+        if auth_date and abs(time.time() - auth_date) > 86400:
+            return None
+    except ValueError:
+        pass
+    user_raw = pairs.get("user")
+    if not user_raw:
+        return None
+    try:
+        return json.loads(user_raw)
+    except Exception:
+        return None
+
+
+def _legacy_token() -> str:
     return (
-        getattr(settings, "ADMIN_WEB_TOKEN", None)
-        or os.getenv("ADMIN_WEB_TOKEN", "")
+        os.getenv("ADMIN_WEB_TOKEN", "")
         or os.getenv("POSTBACK_SECRET", "")
-        or "changeme"
+        or ""
     )
 
 
 async def require_admin(
     request: Request,
+    x_admin_session: str | None = Header(default=None, alias="X-Admin-Session"),
     x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
     token: str | None = Query(default=None),
 ):
-    expected = _admin_token()
+    # 1) Session from Telegram-verified login
+    sess = x_admin_session or request.cookies.get("admin_session")
+    uid = _verify_session(sess)
+    if uid is not None:
+        return uid
+
+    # 2) Optional legacy token (browser fallback)
+    expected = _legacy_token()
     got = x_admin_token or token or request.cookies.get("admin_token")
-    if got != expected:
-        raise HTTPException(status_code=401, detail="Unauthorized — set X-Admin-Token or ?token=")
-    return True
+    if expected and got and hmac.compare_digest(str(got), str(expected)):
+        return 0  # token auth, no specific user
+
+    raise HTTPException(
+        status_code=401,
+        detail="Unauthorized — open Web App from Telegram /admin (ADMIN_IDS)",
+    )
+
+
+class TgAuthBody(BaseModel):
+    init_data: str
 
 
 class SettingBody(BaseModel):
@@ -105,7 +191,7 @@ class BulkSettingsBody(BaseModel):
 
 class MessageBody(BaseModel):
     key: str
-    lang: str  # bn | en
+    lang: str
     value: str
 
 
@@ -126,13 +212,43 @@ async def admin_page():
         return HTMLResponse(f.read())
 
 
+@router.post("/api/auth/telegram")
+async def api_auth_telegram(body: TgAuthBody):
+    """Verify WebApp initData; only ADMIN_IDS may get a session."""
+    user = _validate_webapp_init_data(body.init_data or "")
+    if not user:
+        raise HTTPException(401, "Invalid Telegram initData")
+    try:
+        uid = int(user.get("id") or 0)
+    except (TypeError, ValueError):
+        raise HTTPException(401, "Invalid user")
+    if uid not in settings.admin_ids:
+        raise HTTPException(403, f"Not an admin (id={uid}). Set ADMIN_IDS.")
+    session = _make_session(uid)
+    return {
+        "ok": True,
+        "session": session,
+        "user": {
+            "id": uid,
+            "username": user.get("username"),
+            "first_name": user.get("first_name"),
+            "last_name": user.get("last_name"),
+        },
+    }
+
+
 @router.get("/api/ping")
-async def api_ping(_: bool = Depends(require_admin)):
-    return {"ok": True, "service": "admin", "time": datetime.utcnow().isoformat()}
+async def api_ping(admin_id: int = Depends(require_admin)):
+    return {
+        "ok": True,
+        "service": "admin",
+        "admin_id": admin_id,
+        "time": datetime.utcnow().isoformat(),
+    }
 
 
 @router.get("/api/settings")
-async def api_get_settings(_: bool = Depends(require_admin)):
+async def api_get_settings(_: int = Depends(require_admin)):
     data: dict[str, Any] = {}
     for k in SETTING_KEYS:
         data[k] = await get_setting(k, DEFAULTS.get(k, ""))
@@ -150,7 +266,7 @@ async def api_get_settings(_: bool = Depends(require_admin)):
 
 
 @router.post("/api/settings")
-async def api_set_setting(body: SettingBody, _: bool = Depends(require_admin)):
+async def api_set_setting(body: SettingBody, _: int = Depends(require_admin)):
     key = body.key.strip()
     if not key:
         raise HTTPException(400, "key required")
@@ -159,27 +275,27 @@ async def api_set_setting(body: SettingBody, _: bool = Depends(require_admin)):
 
 
 @router.post("/api/settings/bulk")
-async def api_bulk_settings(body: BulkSettingsBody, _: bool = Depends(require_admin)):
+async def api_bulk_settings(body: BulkSettingsBody, _: int = Depends(require_admin)):
     for k, v in body.items.items():
         await set_setting(str(k).strip(), str(v))
     return {"ok": True, "count": len(body.items)}
 
 
 @router.get("/api/messages")
-async def api_get_messages(_: bool = Depends(require_admin)):
+async def api_get_messages(_: int = Depends(require_admin)):
     out = {}
     for key in MESSAGE_KEYS:
         for lang, defaults in (("bn", BN_TEXTS), ("en", EN_TEXTS)):
             sk = f"msg_{key}_{lang}"
             custom = await get_setting(sk, "")
-            fallback = defaults.get(key, "")
+            fallback = defaults.get(key, "")")
             out[sk] = custom if custom else fallback
             out[f"{sk}__source"] = "db" if custom else "locale"
     return {"keys": MESSAGE_KEYS, "messages": out}
 
 
 @router.post("/api/messages")
-async def api_set_message(body: MessageBody, _: bool = Depends(require_admin)):
+async def api_set_message(body: MessageBody, _: int = Depends(require_admin)):
     lang = body.lang.lower()
     if lang not in ("bn", "en"):
         raise HTTPException(400, "lang must be bn or en")
@@ -191,7 +307,7 @@ async def api_set_message(body: MessageBody, _: bool = Depends(require_admin)):
 
 
 @router.get("/api/stats")
-async def api_stats(_: bool = Depends(require_admin)):
+async def api_stats(_: int = Depends(require_admin)):
     async with async_session() as session:
         total = await session.scalar(select(func.count()).select_from(User)) or 0
         verified = await session.scalar(
@@ -217,7 +333,7 @@ async def api_stats(_: bool = Depends(require_admin)):
 @router.get("/api/users")
 async def api_users(
     limit: int = Query(30, ge=1, le=100),
-    _: bool = Depends(require_admin),
+    _: int = Depends(require_admin),
 ):
     async with async_session() as session:
         result = await session.execute(
@@ -260,10 +376,11 @@ def _e(name: str, premium: bool) -> str:
 
 
 @router.post("/api/ai/caption")
-async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin)):
+async def api_ai_caption(body: CaptionRequest, _: int = Depends(require_admin)):
     topic = (body.topic or "VIP").strip()
     lang = body.lang if body.lang in ("bn", "en") else "bn"
     prem = body.include_tg_emoji
+    err = None
 
     openai_key = os.getenv("OPENAI_API_KEY", "")
     if openai_key:
@@ -272,16 +389,12 @@ async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin))
 
             system = (
                 "You write Telegram bot messages in HTML parse_mode. "
-                "You may use <b>, <i>, <code>, <a href>, and "
-                "<tg-emoji emoji-id=\"ID\">fallback</tg-emoji>. "
-                "Keep under 800 chars. No markdown."
+                "Use <b>, <i>, <code>, <a href>, <tg-emoji emoji-id=\"ID\">fb</tg-emoji>. "
+                "Under 800 chars. No markdown."
             )
             user_prompt = (
                 f"Language: {lang}. Tone: {body.tone}. Topic: {topic}. "
-                f"Include premium tg-emoji: {prem}. "
-                "Known emoji ids: wave 5188481279963715781, spark 5879757713658875847, "
-                "megaphone 5215174853895660531, down 6300954126901577963, "
-                "pin 5397782960512444700, warn 5420323339723881652."
+                f"Premium tg-emoji: {prem}."
             )
             async with httpx.AsyncClient(timeout=30) as client:
                 r = await client.post(
@@ -301,38 +414,30 @@ async def api_ai_caption(body: CaptionRequest, _: bool = Depends(require_admin))
                 return {"ok": True, "source": "openai", "html": text}
         except Exception as e:
             err = str(e)
-    else:
-        err = None
 
     if lang == "bn":
         html = (
             f'{_e("wave", prem)} <b>{topic}</b> {_e("spark", prem)}\n\n'
             f'{_e("megaphone", prem)} VIP চ্যানেলে যোগ দিতে নিচের ধাপগুলো ফলো করুন। {_e("down", prem)}\n\n'
-            f'{_e("pin", prem)} আমাদের Affiliate Link দিয়ে অ্যাকাউন্ট খুলুন, Verify করুন, '
-            f'তারপর বটে <b>Trader ID</b> পাঠান।\n\n'
-            f'{_e("warn", prem)} শুধু 6–12 ডিজিটের ইংরেজি Trader ID পাঠাবেন।'
+            f'{_e("pin", prem)} আমাদের Affiliate Link দিয়ে অ্যাকাউন্ট খুলুন।\n\n'
+            f'{_e("warn", prem)} শুধু 6–12 ডিজিটের Trader ID পাঠাবেন।'
         )
     else:
         html = (
             f'{_e("wave", prem)} Welcome to <b>{topic}</b>! {_e("spark", prem)}\n\n'
-            f'{_e("megaphone", prem)} Follow the steps below to join VIP. {_e("down", prem)}\n\n'
-            f'{_e("pin", prem)} Open an account with our Affiliate Link, verify, '
-            f'then send your <b>Trader ID</b> to the bot.\n\n'
-            f'{_e("warn", prem)} Send only a 6–12 digit English Trader ID.'
+            f'{_e("megaphone", prem)} Follow the steps to join VIP. {_e("down", prem)}\n\n'
+            f'{_e("pin", prem)} Open an account with our Affiliate Link.\n\n'
+            f'{_e("warn", prem)} Send only a 6–12 digit Trader ID.'
         )
     return {"ok": True, "source": "template", "html": html, "note": err}
 
 
 async def get_message_text(lang: str, key: str, **kwargs) -> str:
-    """Prefer DB override msg_{key}_{lang}, else locale file."""
     lang = (lang or "bn").lower()
     if lang not in ("bn", "en"):
         lang = "bn"
     custom = await get_setting(f"msg_{key}_{lang}", "")
-    if custom:
-        text = custom
-    else:
-        text = get_text(lang, key)
+    text = custom if custom else get_text(lang, key)
     if kwargs:
         try:
             return text.format(**kwargs)
