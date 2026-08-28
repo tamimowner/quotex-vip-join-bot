@@ -18,7 +18,7 @@ from services.settings_store import (
     get_vip_group_link,
 )
 from handlers.start import get_bot_display_name
-from admin_web import get_message_text
+from services.messages import get_message_text
 
 router = Router()
 
@@ -139,8 +139,8 @@ async def menu_status(callback: CallbackQuery):
         await callback.answer()
         return
 
-    joined = "Yes ✅" if user.has_joined else "No ❌"
-    verified = "Yes ✅"
+    joined = "Yes" if user.has_joined else "No"
+    verified = "Yes"
     verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
 
     text = await get_message_text(lang, "status_title")
@@ -191,7 +191,6 @@ async def menu_public(callback: CallbackQuery):
     channel = await get_setting("public_channel")
     text = await get_message_text(lang, "public_channel")
     if channel:
-        # keep link dynamic from settings; body template still editable
         if "{channel}" in text or "{link}" in text:
             text = text.format(channel=channel, link=channel)
         else:
@@ -204,15 +203,11 @@ async def menu_public(callback: CallbackQuery):
 async def menu_support(callback: CallbackQuery):
     user = await get_user(callback.from_user.id)
     lang = user.language if user else "bn"
-    # prefer msg_support_* then support_text_* settings
     support = await get_message_text(lang, "support")
     custom = await get_support_text(lang)
-    if custom and custom != support:
-        # if admin set support_text_bn via Links tab, use that when no msg override
-        from services.settings_store import get_setting as gs
-        msg_ov = await gs(f"msg_support_{lang}", "")
-        if not msg_ov:
-            support = custom
+    msg_ov = await get_setting(f"msg_support_{lang}", "")
+    if custom and not msg_ov:
+        support = custom
     await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
     await callback.answer()
 
