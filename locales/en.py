@@ -26,7 +26,7 @@ TEXTS = {
     "btn_premium": "🎁 VIP Join",
     "btn_create_account": "⭐ New Account",
     "btn_delete_account": "❌ Delete Account",
-    "btn_public": "🔗 Public Channel",
+    "btn_public": "🌐 All Social Media",
     "btn_support": "📢 Support",
     "btn_status": "📊 Status",
     "btn_back": "⬅️ Back",
@@ -129,7 +129,54 @@ TEXTS = {
     ),
     "history_title": "📜 <b>History (Postback)</b>",
     "history_empty": "📜 History: no postback yet.",
-    "public_channel": "🔗 Free Signal Public Channel:\nhttps://t.me/+gLV8BLij6PAxYjE1",
+
+    "public_channel": (
+        '<tg-emoji emoji-id="5856956664292315353">📢</tg-emoji> '
+        "<b>TELEGRAM CHANNEL LINK</b>\n"
+        "https://t.me/+qUD0MGB5Px1kOTRl\n\n"
+
+        '<tg-emoji emoji-id="5855155960598762938">🎵</tg-emoji> '
+        "<b>TikTok</b> "
+        '<tg-emoji emoji-id="5382322671679708881">👤</tg-emoji>'
+        '<tg-emoji emoji-id="6105018848434456662">✨</tg-emoji>\n'
+        "https://www.tiktok.com/@sktraderasif.official\n\n"
+
+        '<tg-emoji emoji-id="5855155960598762938">🎵</tg-emoji> '
+        "<b>TikTok</b> "
+        '<tg-emoji emoji-id="5381990043642502553">👤</tg-emoji>'
+        '<tg-emoji emoji-id="6105018848434456662">✨</tg-emoji>\n'
+        "https://www.tiktok.com/@sktraderasifofficial\n\n"
+
+        '<tg-emoji emoji-id="5855155960598762938">🎵</tg-emoji> '
+        "<b>TikTok</b> "
+        '<tg-emoji emoji-id="5381879959335738545">👤</tg-emoji>'
+        '<tg-emoji emoji-id="6105018848434456662">✨</tg-emoji>\n'
+        "https://www.tiktok.com/@trader.asif.official\n\n"
+
+        '<tg-emoji emoji-id="5775988670972563213">📘</tg-emoji> '
+        "<b>Fb Page:</b> "
+        '<tg-emoji emoji-id="5843926068523703404">📄</tg-emoji>\n'
+        "https://www.facebook.com/share/1BUTtViLNy/\n\n"
+
+        '<tg-emoji emoji-id="5775988670972563213">📘</tg-emoji> '
+        "<b>Fb Page:</b> "
+        '<tg-emoji emoji-id="5845852820917460595">📄</tg-emoji>\n'
+        "https://www.facebook.com/share/17N4AAUddg/\n\n"
+
+        '<tg-emoji emoji-id="5814161253672687027">▶️</tg-emoji> '
+        "<b>Youtube:</b>\n"
+        "https://youtube.com/@sktraderasifofficial\n\n"
+
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "Join the Support & Discussion Group "
+        '<tg-emoji emoji-id="5449683594425410231">💬</tg-emoji>\n'
+        "https://t.me/SKofficialdiscussionsupport\n\n"
+
+        '<tg-emoji emoji-id="5039783602301175152">📩</tg-emoji> '
+        "<b>Contact Me:</b> @Sk_TraderAsif_Official "
+        '<tg-emoji emoji-id="5278488293950889949">✅</tg-emoji>'
+    ),
+
     "support": "Any problem? Contact admin: @TEADMIN9",
     "create_account_guide": (
         "⭐ <b>How to create new Quotex account</b>\n\n"
