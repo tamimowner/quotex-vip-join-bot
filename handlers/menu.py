@@ -1,5 +1,5 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, MessageEntity
 from sqlalchemy import select
 from database.models import User, PostbackLog
 from database.db import async_session
@@ -19,6 +19,7 @@ from services.settings_store import (
 )
 from handlers.start import get_bot_display_name
 from services.messages import get_message_text
+from services.emoji_text import create_account_message, delete_account_message
 
 router = Router()
 
@@ -31,50 +32,72 @@ async def get_user(telegram_id: int) -> User | None:
         return result.scalar_one_or_none()
 
 
-async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
+async def _safe_edit(
+    callback: CallbackQuery,
+    text: str,
+    reply_markup=None,
+    entities: list[MessageEntity] | None = None,
+):
     """
-    Edit current message; if it is a photo (welcome), use edit_caption;
-    otherwise send a new message. Always resilient.
+    Edit current message; photo → edit_caption; else new message.
+    If entities given: no parse_mode (custom emoji via entities).
     """
     text = (text or "")[:4000]
     msg = callback.message
+    use_entities = bool(entities)
 
-    # 1) Try edit text (normal text messages)
+    # Prefer new message for entity-based custom emoji (most reliable)
+    if use_entities:
+        try:
+            await msg.answer(
+                text,
+                reply_markup=reply_markup,
+                entities=entities,
+                disable_web_page_preview=True,
+            )
+            return
+        except Exception as e:
+            print(f"_safe_edit entities answer: {e}")
+
     try:
-        await msg.edit_text(
-            text,
+        kwargs = dict(
             reply_markup=reply_markup,
-            parse_mode="HTML",
             disable_web_page_preview=True,
         )
+        if use_entities:
+            kwargs["entities"] = entities
+        else:
+            kwargs["parse_mode"] = "HTML"
+        await msg.edit_text(text, **kwargs)
         return
     except Exception as e:
         print(f"_safe_edit edit_text: {e}")
 
-    # 2) Photo / media message → edit caption
     try:
-        await msg.edit_caption(
-            caption=text,
-            reply_markup=reply_markup,
-            parse_mode="HTML",
-        )
+        kwargs = dict(reply_markup=reply_markup)
+        if use_entities:
+            kwargs["caption_entities"] = entities
+        else:
+            kwargs["parse_mode"] = "HTML"
+        await msg.edit_caption(caption=text, **kwargs)
         return
     except Exception as e:
         print(f"_safe_edit edit_caption: {e}")
 
-    # 3) New message with HTML
     try:
-        await msg.answer(
-            text,
+        kwargs = dict(
             reply_markup=reply_markup,
-            parse_mode="HTML",
             disable_web_page_preview=True,
         )
+        if use_entities:
+            kwargs["entities"] = entities
+        else:
+            kwargs["parse_mode"] = "HTML"
+        await msg.answer(text, **kwargs)
         return
     except Exception as e:
-        print(f"_safe_edit answer HTML: {e}")
+        print(f"_safe_edit answer: {e}")
 
-    # 4) Plain text fallback (no HTML / emoji tags)
     try:
         plain = (
             text.replace("<b>", "")
@@ -82,7 +105,6 @@ async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
             .replace("<code>", "")
             .replace("</code>", "")
         )
-        # strip tg-emoji tags roughly
         while "<tg-emoji" in plain:
             start = plain.find("<tg-emoji")
             end = plain.find(">", start)
@@ -287,15 +309,10 @@ async def menu_create(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         register_url = await get_affiliate_url()
-        min_dep = await get_min_deposit()
-        text = await get_message_text(
-            lang,
-            "create_account_guide",
-            register_url=register_url or "",
-            min_deposit=int(min_dep),
-        )
+        min_dep = int(await get_min_deposit())
+        text, entities = create_account_message(lang, register_url or "", min_dep)
         kb = await premium_keyboard(lang, register_url)
-        await _safe_edit(callback, text, reply_markup=kb)
+        await _safe_edit(callback, text, reply_markup=kb, entities=entities)
     except Exception as e:
         print(f"menu_create error: {e}")
         try:
@@ -313,11 +330,12 @@ async def menu_delete(callback: CallbackQuery):
     try:
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
-        text = await get_message_text(lang, "delete_account_guide")
+        text, entities = delete_account_message(lang)
         await _safe_edit(
             callback,
             text,
             reply_markup=await back_keyboard(lang),
+            entities=entities,
         )
     except Exception as e:
         print(f"menu_delete error: {e}")
