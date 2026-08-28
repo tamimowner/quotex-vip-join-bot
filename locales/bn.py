@@ -23,37 +23,40 @@ TEXTS = {
     ),
 
     "main_menu": "মেইন মেনু",
-    "btn_premium": "🎁 VIP জয়েন",
-    "btn_create_account": "⭐ নতুন অ্যাকাউন্ট",
-    "btn_delete_account": "❌ অ্যাকাউন্ট ডিলিট",
-    "btn_public": "🌐 সব সোশ্যাল মিডিয়া",
-    "btn_support": "📢 সাপোর্ট",
-    "btn_status": "📊 স্ট্যাটাস",
-    "btn_back": "⬅️ ফিরে যান",
+
+    # Button labels — NO normal emoji (custom emoji via Admin → প্রিমিয়াম ইমোজি)
+    "btn_premium": "VIP জয়েন",
+    "btn_create_account": "নতুন অ্যাকাউন্ট",
+    "btn_delete_account": "অ্যাকাউন্ট ডিলিট",
+    "btn_public": "সব সোশ্যাল মিডিয়া",
+    "btn_support": "সাপোর্ট",
+    "btn_status": "স্ট্যাটাস",
+    "btn_back": "ফিরে যান",
     "btn_tutorial": "Tutorial দেখুন",
     "btn_open_account": "Quotex Account খুলুন",
-    "btn_register": "📝 রেজিস্টার ও ডিপোজিট",
-    "btn_settings": "⚙️ সেটিংস",
-    "btn_change_language": "🌐 ভাষা পরিবর্তন",
+    "btn_register": "রেজিস্টার ও ডিপোজিট",
+    "btn_settings": "সেটিংস",
+    "btn_change_language": "ভাষা পরিবর্তন",
+
     "settings_title": (
-        "⚙️ <b>সেটিংস</b>\n\n"
+        "<b>সেটিংস</b>\n\n"
         "এখান থেকে ভাষা পরিবর্তন করতে পারবেন।\n"
         "আরও অপশন নিচে পাবেন।"
     ),
 
     "invalid_trader_id": (
-        "❌ ভুল ফরম্যাট।\n"
+        "ভুল ফরম্যাট।\n"
         "শুধুমাত্র ইংরেজি <b>6–12 সংখ্যার</b> Trader ID পাঠান।\n"
         "উদাহরণ: <code>12345678</code>"
     ),
     "trader_id_saved": (
-        "✅ Trader ID সেভ হয়েছে: <code>{trader_id}</code>"
+        "Trader ID সেভ হয়েছে: <code>{trader_id}</code>"
     ),
     "account_created_success": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
         "আপনার একাউন্ট সঠিক ভাবে তৈরি হয়েছে "
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
-        "🆔 Trader ID: <code>{trader_id}</code>"
+        "Trader ID: <code>{trader_id}</code>"
     ),
     "account_ok_need_deposit": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
@@ -66,7 +69,7 @@ TEXTS = {
         '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>'
     ),
     "deposit_received_need_more": (
-        "💰 ডিপোজিট পেয়েছি: <b>${amount:.2f}</b>\n"
+        "ডিপোজিট পেয়েছি: <b>${amount:.2f}</b>\n"
         "মোট: <b>${total:.2f}</b> / প্রয়োজন: <b>${min_deposit}</b>\n\n"
         "আরও ডিপোজিট করুন, তারপর Trader ID পাঠান বা অপেক্ষা করুন।"
     ),
@@ -97,19 +100,17 @@ TEXTS = {
     ),
 
     "premium_info": (
-        "🎁 <b>প্রিমিয়াম / VIP জয়েন প্রক্রিয়া</b>\n\n"
-        "1️⃣ নিচের বাটনে ক্লিক করে রেজিস্ট্রেশন লিংক খুলুন\n"
-        "2️⃣ সেই লিংক দিয়ে <b>নতুন</b> কোটেক্স অ্যাকাউন্ট তৈরি করুন\n"
-        "3️⃣ মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
-        "৪️⃣ বটে Trader ID পাঠান\n"
-        "5️⃣ ভেরিফাই হলে VIP গ্রুপ লিংক পাবেন\n\n"
-        "⚠️ শুধু বটের দেওয়া Affiliate Link ব্যবহার করুন।\n"
+        "<b>প্রিমিয়াম / VIP জয়েন প্রক্রিয়া</b>\n\n"
+        "1. নিচের বাটনে ক্লিক করে রেজিস্ট্রেশন লিংক খুলুন\n"
+        "2. সেই লিংক দিয়ে <b>নতুন</b> কোটেক্স অ্যাকাউন্ট তৈরি করুন\n"
+        "3. মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
+        "4. বটে Trader ID পাঠান\n"
+        "5. ভেরিফাই হলে VIP গ্রুপ লিংক পাবেন\n\n"
+        "শুধু বটের দেওয়া Affiliate Link ব্যবহার করুন।\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
-    "waiting_deposit": (
-        "⏳ আপনার ডিপোজিটের অপেক্ষায়..."
-    ),
-    "already_verified": "✅ আপনি ইতিমধ্যে ভেরিফাইড!",
+    "waiting_deposit": "আপনার ডিপোজিটের অপেক্ষায়...",
+    "already_verified": "আপনি ইতিমধ্যে ভেরিফাইড!",
 
     "invite_ready": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
@@ -128,32 +129,51 @@ TEXTS = {
         "প্রশ্ন থাকলে: @SK_SupportOfficial"
     ),
 
-    "already_joined": "✅ আপনি ইতিমধ্যে VIP গ্রুপে জয়েন করেছেন।",
-    "status_title": "📊 <b>আপনার অ্যাকাউন্ট স্ট্যাটাস</b>\n\n",
-    "status_not_verified": "❌ এখনো ভেরিফাই হয়নি। আমাদের লিংক দিয়ে রেজিস্টার ও ডিপোজিট করুন।",
+    "already_joined": "আপনি ইতিমধ্যে VIP গ্রুপে জয়েন করেছেন।",
+
+    "status_title": (
+        '<tg-emoji emoji-id="6131664675214987967">📊</tg-emoji> '
+        "<b>আপনার অ্যাকাউন্ট স্ট্যাটাস</b>\n\n"
+    ),
+    "status_not_verified": "এখনো ভেরিফাই হয়নি। আমাদের লিংক দিয়ে রেজিস্টার ও ডিপোজিট করুন।",
     "status_verified": (
-        "✅ স্ট্যাটাস: <b>ভেরিফাইড</b>\n"
-        "🆔 ট্রেডার আইডি: <code>{trader_id}</code>\n"
-        "🌍 দেশ: {country}\n"
-        "💰 মোট ডিপোজিট: ${total_deposit:.2f}\n"
-        "💸 মোট উইথড্র: ${total_withdraw:.2f}\n"
-        "📥 সর্বশেষ ডিপোজিট: ${last_deposit:.2f}\n"
-        "📅 ভেরিফাইড: {verified_at}\n"
-        "👥 VIP জয়েন: {joined}"
+        '<tg-emoji emoji-id="5310024172926161438">🆔</tg-emoji> '
+        "Trader ID: <code>{trader_id}</code>\n"
+        '<tg-emoji emoji-id="6084845507304229827">🌍</tg-emoji> '
+        "দেশ: {country}\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "ভেরিফাইড: Yes\n"
+        '<tg-emoji emoji-id="5472279086657199080">📅</tg-emoji> '
+        "ভেরিফাই সময়: {verified_at}\n"
+        '<tg-emoji emoji-id="5309844291105869907">👥</tg-emoji> '
+        "VIP জয়েন: {joined}\n"
+        '<tg-emoji emoji-id="6064542166103887096">💰</tg-emoji> '
+        "মোট ডিপোজিট: ${total_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6131928704034542549">📥</tg-emoji> '
+        "সর্বশেষ ডিপোজিট: ${last_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6129731974291527294">💸</tg-emoji> '
+        "মোট উইথড্র: ${total_withdraw:.2f}"
     ),
     "status_full": (
-        "🆔 Trader ID: <code>{trader_id}</code>\n"
-        "🌍 দেশ: {country}\n"
-        "✅ ভেরিফাইড: {verified}\n"
-        "📅 ভেরিফাই সময়: {verified_at}\n"
-        "👥 VIP জয়েন: {joined}\n"
-        "💰 মোট ডিপোজিট: ${total_deposit:.2f}\n"
-        "📥 সর্বশেষ ডিপোজিট: ${last_deposit:.2f}\n"
-        "💸 মোট উইথড্র: ${total_withdraw:.2f}\n"
-        "🎯 মিনিমাম প্রয়োজন: ${min_deposit}"
+        '<tg-emoji emoji-id="5310024172926161438">🆔</tg-emoji> '
+        "Trader ID: <code>{trader_id}</code>\n"
+        '<tg-emoji emoji-id="6084845507304229827">🌍</tg-emoji> '
+        "দেশ: {country}\n"
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
+        "ভেরিফাইড: {verified}\n"
+        '<tg-emoji emoji-id="5472279086657199080">📅</tg-emoji> '
+        "ভেরিফাই সময়: {verified_at}\n"
+        '<tg-emoji emoji-id="5309844291105869907">👥</tg-emoji> '
+        "VIP জয়েন: {joined}\n"
+        '<tg-emoji emoji-id="6064542166103887096">💰</tg-emoji> '
+        "মোট ডিপোজিট: ${total_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6131928704034542549">📥</tg-emoji> '
+        "সর্বশেষ ডিপোজিট: ${last_deposit:.2f}\n"
+        '<tg-emoji emoji-id="6129731974291527294">💸</tg-emoji> '
+        "মোট উইথড্র: ${total_withdraw:.2f}"
     ),
-    "history_title": "📜 <b>হিস্ট্রি (Postback)</b>",
-    "history_empty": "📜 হিস্ট্রি: এখনো কোনো postback নেই।",
+    "history_title": "হিস্ট্রি (Postback)",
+    "history_empty": "হিস্ট্রি: এখনো কোনো postback নেই।",
 
     "public_channel": (
         '<tg-emoji emoji-id="5856956664292315353">📢</tg-emoji> '
@@ -203,20 +223,36 @@ TEXTS = {
     ),
 
     "support": "কোনো সমস্যা হলে অ্যাডমিনকে মেসেজ করুন: @TEADMIN9",
+
     "create_account_guide": (
-        "⭐ <b>কীভাবে নতুন কোটেক্স অ্যাকাউন্ট তৈরি করবেন</b>\n\n"
-        "1. নিচের <b>রেজিস্টার</b> বাটনে ক্লিক করুন\n"
-        "2. নতুন ইমেইল/ফোন দিয়ে ফর্ম পূরণ করুন\n"
-        "3. রেজিস্ট্রেশন শেষ করুন\n"
-        "4. মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
-        "5. বটে Trader ID পাঠান\n\n"
-        "শুধু আমাদের Affiliate Link (lid=<code>1480996</code>) গ্রহণযোগ্য।"
+        '<tg-emoji emoji-id="6129909635613726974">⭐</tg-emoji> '
+        "<b>কীভাবে নতুন কোটেক্স অ্যাকাউন্ট তৈরি করবেন</b>\n\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "নিচের রেজিস্টার বাটনে ক্লিক করুন\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "নতুন ইমেইল/ফোন দিয়ে ফর্ম পূরণ করুন\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "রেজিস্ট্রেশন শেষ করুন\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "মিনিমাম ডিপোজিট করুন <b>${min_deposit}</b>\n"
+        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
+        "বটে Trader ID পাঠান\n\n"
+        '<tg-emoji emoji-id="5938264290740933445">🔗</tg-emoji> '
+        "শুধু আমাদের Affiliate Link = {register_url}\n"
+        "গ্রহণযোগ্য। "
+        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji>'
     ),
+
     "delete_account_guide": (
-        "❌ <b>কীভাবে পুরাতন কোটেক্স অ্যাকাউন্ট ডিলিট করবেন</b>\n\n"
-        "1. পুরোনো অ্যাকাউন্টে লগইন\n"
-        "2. প্রোফাইল / সেটিংস\n"
-        "3. অ্যাকাউন্ট ডিলিট রিকোয়েস্ট\n"
-        "4. আমাদের লিংক দিয়ে নতুন অ্যাকাউন্ট তৈরি"
+        '<tg-emoji emoji-id="5298742255912235479">❌</tg-emoji> '
+        "<b>কীভাবে পুরাতন কোটেক্স অ্যাকাউন্ট ডিলিট করবেন</b>\n\n"
+        '<tg-emoji emoji-id="5235547326889608764">1</tg-emoji> '
+        "পুরোনো অ্যাকাউন্টে লগইন\n"
+        '<tg-emoji emoji-id="5235547326889608764">2</tg-emoji> '
+        "প্রোফাইল / সেটিংস\n"
+        '<tg-emoji emoji-id="5235919365546724452">3</tg-emoji> '
+        "অ্যাকাউন্ট ডিলিট রিকোয়েস্ট\n"
+        '<tg-emoji emoji-id="5238105937692085546">4</tg-emoji> '
+        "আমাদের লিংক দিয়ে নতুন অ্যাকাউন্ট তৈরি"
     ),
 }
