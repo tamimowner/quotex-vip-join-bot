@@ -32,211 +32,300 @@ async def get_user(telegram_id: int) -> User | None:
 
 
 async def _safe_edit(callback: CallbackQuery, text: str, reply_markup=None):
+    """
+    Edit current message; if it is a photo (welcome), use edit_caption;
+    otherwise send a new message. Always resilient.
+    """
+    text = (text or "")[:4000]
+    msg = callback.message
+
+    # 1) Try edit text (normal text messages)
     try:
-        await callback.message.edit_text(
+        await msg.edit_text(
             text,
             reply_markup=reply_markup,
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
-    except Exception:
-        await callback.message.answer(
+        return
+    except Exception as e:
+        print(f"_safe_edit edit_text: {e}")
+
+    # 2) Photo / media message → edit caption
+    try:
+        await msg.edit_caption(
+            caption=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+        )
+        return
+    except Exception as e:
+        print(f"_safe_edit edit_caption: {e}")
+
+    # 3) New message with HTML
+    try:
+        await msg.answer(
             text,
             reply_markup=reply_markup,
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
+        return
+    except Exception as e:
+        print(f"_safe_edit answer HTML: {e}")
+
+    # 4) Plain text fallback (no HTML / emoji tags)
+    try:
+        plain = (
+            text.replace("<b>", "")
+            .replace("</b>", "")
+            .replace("<code>", "")
+            .replace("</code>", "")
+        )
+        # strip tg-emoji tags roughly
+        while "<tg-emoji" in plain:
+            start = plain.find("<tg-emoji")
+            end = plain.find(">", start)
+            if end == -1:
+                break
+            plain = plain[:start] + plain[end + 1 :]
+        plain = plain.replace("</tg-emoji>", "")
+        await msg.answer(plain[:4000], reply_markup=reply_markup)
+    except Exception as e:
+        print(f"_safe_edit plain: {e}")
 
 
 @router.callback_query(F.data == "menu:back")
 async def menu_back(callback: CallbackQuery, bot: Bot):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    bot_name = await get_bot_display_name(bot)
-    register_url = await get_affiliate_url()
-    text = await get_message_text(
-        lang,
-        "welcome",
-        botName=bot_name,
-        register_url=register_url,
-    )
-    await _safe_edit(callback, text, reply_markup=await main_menu(lang))
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        bot_name = await get_bot_display_name(bot)
+        register_url = await get_affiliate_url()
+        text = await get_message_text(
+            lang,
+            "welcome",
+            botName=bot_name,
+            register_url=register_url,
+        )
+        await _safe_edit(callback, text, reply_markup=await main_menu(lang))
+    except Exception as e:
+        print(f"menu_back error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:settings")
 async def menu_settings(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    await _safe_edit(
-        callback,
-        await get_message_text(lang, "settings_title"),
-        reply_markup=await settings_keyboard(lang),
-    )
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        await _safe_edit(
+            callback,
+            await get_message_text(lang, "settings_title"),
+            reply_markup=await settings_keyboard(lang),
+        )
+    except Exception as e:
+        print(f"menu_settings error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "settings:lang")
 async def settings_lang(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    await _safe_edit(
-        callback,
-        await get_message_text(lang, "choose_language"),
-        reply_markup=await settings_language_keyboard(lang),
-    )
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        await _safe_edit(
+            callback,
+            await get_message_text(lang, "choose_language"),
+            reply_markup=await settings_language_keyboard(lang),
+        )
+    except Exception as e:
+        print(f"settings_lang error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:premium")
 async def menu_premium(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
 
-    if user and user.is_verified:
-        vip_link = user.invite_link or await get_vip_group_link()
-        if vip_link:
+        if user and user.is_verified:
+            vip_link = user.invite_link or await get_vip_group_link()
+            if vip_link:
+                await _safe_edit(
+                    callback,
+                    await get_message_text(
+                        lang,
+                        "invite_ready",
+                        link=vip_link,
+                        trader_id=user.trader_id or "-",
+                    ),
+                    reply_markup=None,
+                )
+                await callback.answer()
+                return
+
+        if user and user.has_joined:
             await _safe_edit(
                 callback,
-                await get_message_text(
-                    lang,
-                    "invite_ready",
-                    link=vip_link,
-                    trader_id=user.trader_id or "-",
-                ),
-                reply_markup=None,
+                await get_message_text(lang, "already_joined"),
+                reply_markup=await back_keyboard(lang),
             )
             await callback.answer()
             return
 
-    if user and user.has_joined:
+        register_url = await get_affiliate_url()
         await _safe_edit(
             callback,
-            await get_message_text(lang, "already_joined"),
-            reply_markup=await back_keyboard(lang),
+            await get_message_text(lang, "premium_info"),
+            reply_markup=await premium_keyboard(lang, register_url),
         )
-        await callback.answer()
-        return
-
-    register_url = await get_affiliate_url()
-    await _safe_edit(
-        callback,
-        await get_message_text(lang, "premium_info"),
-        reply_markup=await premium_keyboard(lang, register_url),
-    )
+    except Exception as e:
+        print(f"menu_premium error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:status")
 async def menu_status(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    min_dep = await get_min_deposit()
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        min_dep = await get_min_deposit()
 
-    if not user or not user.is_verified:
-        title = await get_message_text(lang, "status_title")
-        body = await get_message_text(lang, "status_not_verified")
-        await _safe_edit(
-            callback,
-            title + body,
-            reply_markup=await back_keyboard(lang),
-        )
-        await callback.answer()
-        return
-
-    joined = "Yes" if user.has_joined else "No"
-    verified = "Yes"
-    verified_at = user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
-
-    text = await get_message_text(lang, "status_title")
-    text += await get_message_text(
-        lang,
-        "status_full",
-        trader_id=user.trader_id or "-",
-        country=user.country or "-",
-        total_deposit=user.total_deposit or 0,
-        total_withdraw=user.total_withdraw or 0,
-        last_deposit=user.last_deposit or 0,
-        min_deposit=int(min_dep),
-        verified=verified,
-        verified_at=verified_at,
-        joined=joined,
-    )
-
-    async with async_session() as session:
-        q = (
-            select(PostbackLog)
-            .where(PostbackLog.trader_id == (user.trader_id or ""))
-            .order_by(PostbackLog.id.desc())
-            .limit(8)
-        )
-        result = await session.execute(q)
-        logs = result.scalars().all()
-
-    if logs:
-        text += "\n\n" + await get_message_text(lang, "history_title") + "\n"
-        for log in logs:
-            when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
-            text += (
-                f"• {when} | status=<code>{log.status or '-'}</code> "
-                f"dep=${log.sumdep or 0:.2f} "
-                f"uid=<code>{log.trader_id or '-'}</code>\n"
+        if not user or not user.is_verified:
+            title = await get_message_text(lang, "status_title")
+            body = await get_message_text(lang, "status_not_verified")
+            await _safe_edit(
+                callback,
+                title + body,
+                reply_markup=await back_keyboard(lang),
             )
-    else:
-        text += "\n\n" + await get_message_text(lang, "history_empty")
+            await callback.answer()
+            return
 
-    await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
+        joined = "Yes" if user.has_joined else "No"
+        verified = "Yes"
+        verified_at = (
+            user.verified_at.strftime("%Y-%m-%d %H:%M") if user.verified_at else "-"
+        )
+
+        text = await get_message_text(lang, "status_title")
+        text += await get_message_text(
+            lang,
+            "status_full",
+            trader_id=user.trader_id or "-",
+            country=user.country or "-",
+            total_deposit=float(user.total_deposit or 0),
+            total_withdraw=float(user.total_withdraw or 0),
+            last_deposit=float(user.last_deposit or 0),
+            min_deposit=int(min_dep),
+            verified=verified,
+            verified_at=verified_at,
+            joined=joined,
+        )
+
+        async with async_session() as session:
+            q = (
+                select(PostbackLog)
+                .where(PostbackLog.trader_id == (user.trader_id or ""))
+                .order_by(PostbackLog.id.desc())
+                .limit(8)
+            )
+            result = await session.execute(q)
+            logs = result.scalars().all()
+
+        if logs:
+            text += "\n\n" + await get_message_text(lang, "history_title") + "\n"
+            for log in logs:
+                when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
+                text += (
+                    f"• {when} | status=<code>{log.status or '-'}</code> "
+                    f"dep=${float(log.sumdep or 0):.2f} "
+                    f"uid=<code>{log.trader_id or '-'}</code>\n"
+                )
+        else:
+            text += "\n\n" + await get_message_text(lang, "history_empty")
+
+        await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
+    except Exception as e:
+        print(f"menu_status error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:public")
 async def menu_public(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    text = await get_message_text(lang, "public_channel")
-    await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        text = await get_message_text(lang, "public_channel")
+        await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
+    except Exception as e:
+        print(f"menu_public error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:support")
 async def menu_support(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    support = await get_message_text(lang, "support")
-    custom = await get_support_text(lang)
-    msg_ov = await get_setting(f"msg_support_{lang}", "")
-    if custom and not msg_ov:
-        support = custom
-    await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = user.language if user else "bn"
+        support = await get_message_text(lang, "support")
+        custom = await get_support_text(lang)
+        msg_ov = await get_setting(f"msg_support_{lang}", "")
+        if custom and not msg_ov:
+            support = custom
+        await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
+    except Exception as e:
+        print(f"menu_support error: {e}")
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:create")
 async def menu_create(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    register_url = await get_affiliate_url()
-    min_dep = await get_min_deposit()
-    await _safe_edit(
-        callback,
-        await get_message_text(
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = (user.language if user else None) or "bn"
+        register_url = await get_affiliate_url()
+        min_dep = await get_min_deposit()
+        text = await get_message_text(
             lang,
             "create_account_guide",
-            register_url=register_url,
+            register_url=register_url or "",
             min_deposit=int(min_dep),
-        ),
-        reply_markup=await premium_keyboard(lang, register_url),
-    )
+        )
+        kb = await premium_keyboard(lang, register_url)
+        await _safe_edit(callback, text, reply_markup=kb)
+    except Exception as e:
+        print(f"menu_create error: {e}")
+        try:
+            await callback.message.answer(
+                f"Create account guide error. Please /start again.\n<code>{e}</code>",
+                parse_mode="HTML",
+            )
+        except Exception:
+            pass
     await callback.answer()
 
 
 @router.callback_query(F.data == "menu:delete")
 async def menu_delete(callback: CallbackQuery):
-    user = await get_user(callback.from_user.id)
-    lang = user.language if user else "bn"
-    await _safe_edit(
-        callback,
-        await get_message_text(lang, "delete_account_guide"),
-        reply_markup=await back_keyboard(lang),
-    )
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = (user.language if user else None) or "bn"
+        text = await get_message_text(lang, "delete_account_guide")
+        await _safe_edit(
+            callback,
+            text,
+            reply_markup=await back_keyboard(lang),
+        )
+    except Exception as e:
+        print(f"menu_delete error: {e}")
+        try:
+            await callback.message.answer(
+                f"Delete guide error. Please /start again.\n<code>{e}</code>",
+                parse_mode="HTML",
+            )
+        except Exception:
+            pass
     await callback.answer()
