@@ -315,8 +315,13 @@ async def menu_create(callback: CallbackQuery):
             register_url=register_url or "",
         )
         kb = await premium_keyboard(lang, register_url)
-        # Use HTML method (same as other working pages) — no entities
-        await _safe_edit(callback, text, reply_markup=kb)
+        # Always send NEW message with HTML so custom emoji + bold work reliably
+        await callback.message.answer(
+            text,
+            reply_markup=kb,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
     except Exception as e:
         print(f"menu_create error: {e}")
         try:
@@ -335,11 +340,12 @@ async def menu_delete(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         text = await get_message_text(lang, "delete_account_guide")
-        # Use HTML method (same as other working pages) — no entities
-        await _safe_edit(
-            callback,
+        # Always send NEW message with HTML so custom emoji + bold work reliably
+        await callback.message.answer(
             text,
             reply_markup=await back_keyboard(lang),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
         )
     except Exception as e:
         print(f"menu_delete error: {e}")
