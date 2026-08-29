@@ -24,7 +24,6 @@ TEXTS = {
 
     "main_menu": "মেইন মেনু",
 
-    # Button labels — NO normal emoji (custom emoji via Admin → প্রিমিয়াম ইমোজি)
     "btn_premium": "VIP জয়েন",
     "btn_create_account": "নতুন অ্যাকাউন্ট",
     "btn_delete_account": "অ্যাকাউন্ট ডিলিট",
@@ -225,22 +224,25 @@ TEXTS = {
     "support": "কোনো সমস্যা হলে অ্যাডমিনকে মেসেজ করুন: @TEADMIN9",
 
     "create_account_guide": (
-        '<tg-emoji emoji-id="6129909635613726974">⭐</tg-emoji> '
-        "<b>কীভাবে নতুন কোটেক্স অ্যাকাউন্ট তৈরি করবেন</b>\n\n"
-        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
-        "নিচের রেজিস্টার বাটনে ক্লিক করুন\n"
-        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
-        "নতুন ইমেইল/ফোন দিয়ে ফর্ম পূরণ করুন\n"
-        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
-        "রেজিস্ট্রেশন শেষ করুন\n"
-        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
-        "মিনিমাম ডিপোজিট করুন <b>${min_deposit}</b>\n"
-        '<tg-emoji emoji-id="6217713374327738118">•</tg-emoji> '
-        "বটে Trader ID পাঠান\n\n"
-        '<tg-emoji emoji-id="5938264290740933445">🔗</tg-emoji> '
-        "শুধু আমাদের Affiliate Link = {register_url}\n"
-        "গ্রহণযোগ্য। "
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji>'
+        '<tg-emoji emoji-id="6105169455757661838">⭐</tg-emoji> '
+        "<b>কীভাবে একটি নতুন Quotex অ্যাকাউন্ট তৈরি করবেন</b>\n\n"
+        '<tg-emoji emoji-id="5938069973535559743">১</tg-emoji> '
+        ". আমার লিংকে ক্লিক করুন:\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        "{register_url}\n\n"
+        '<tg-emoji emoji-id="5938069973535559743">২</tg-emoji> '
+        ". দেশ নির্বাচন করুন, নতুন ইমেইল এবং শক্তিশালী পাসওয়ার্ড দিন "
+        '<tg-emoji emoji-id="6095821244689554590">🔐</tg-emoji>\n\n'
+        '<tg-emoji emoji-id="5938069973535559743">৩</tg-emoji> '
+        ". শর্তাবলী গ্রহণ করুন\n\n"
+        '<tg-emoji emoji-id="5938069973535559743">৪</tg-emoji> '
+        ". রেজিস্ট্রেশন ক্লিক করুন – অ্যাকাউন্ট রেজিস্ট্রেশন সফল হয়েছে।\n\n"
+        '<tg-emoji emoji-id="5938069973535559743">৫</tg-emoji> '
+        ". আপনার ইমেইল চেক করুন – আপনি ভেরিফিকেশনের জন্য একটি লিংক পাবেন – আপনার ইমেইল ভেরিফাই করুন।\n\n"
+        '<tg-emoji emoji-id="5938069973535559743">৬</tg-emoji> '
+        ". তারপর আপনার প্রোফাইলে যান এবং ডকুমেন্টস (আইডেন্টিটি ভেরিফিকেশন) দিয়ে অ্যাকাউন্ট ভেরিফাই করুন।\n\n"
+        '<tg-emoji emoji-id="6273749318717412886">✅</tg-emoji> '
+        "সম্পন্ন! আপনার অ্যাকাউন্ট ডিপোজিটের জন্য প্রস্তুত।"
     ),
 
     "delete_account_guide": (
