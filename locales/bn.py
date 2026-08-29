@@ -221,7 +221,15 @@ TEXTS = {
         '<tg-emoji emoji-id="5278488293950889949">✅</tg-emoji>'
     ),
 
-    "support": "কোনো সমস্যা হলে অ্যাডমিনকে মেসেজ করুন: @TEADMIN9",
+    "support": (
+        '<tg-emoji emoji-id="6274034641984820525">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6275947023418003921">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6276161149012546258">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
+        '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
+        "@SK_SupportOfficial "
+        '<tg-emoji emoji-id="6217685925191750376">✅</tg-emoji>'
+    ),
 
     "create_account_guide": (
         '<tg-emoji emoji-id="6105169455757661838">✨</tg-emoji>'
