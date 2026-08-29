@@ -19,7 +19,6 @@ from services.settings_store import (
 )
 from handlers.start import get_bot_display_name
 from services.messages import get_message_text
-from services.emoji_text import create_account_message, delete_account_message
 
 router = Router()
 
@@ -41,6 +40,7 @@ async def _safe_edit(
     """
     Edit current message; photo → edit_caption; else new message.
     If entities given: no parse_mode (custom emoji via entities).
+    Otherwise use HTML parse_mode (works reliably for tg-emoji on this bot).
     """
     text = (text or "")[:4000]
     msg = callback.message
@@ -309,10 +309,14 @@ async def menu_create(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         register_url = await get_affiliate_url()
-        min_dep = int(await get_min_deposit())
-        text, entities = create_account_message(lang, register_url or "", min_dep)
+        text = await get_message_text(
+            lang,
+            "create_account_guide",
+            register_url=register_url or "",
+        )
         kb = await premium_keyboard(lang, register_url)
-        await _safe_edit(callback, text, reply_markup=kb, entities=entities)
+        # Use HTML method (same as other working pages) — no entities
+        await _safe_edit(callback, text, reply_markup=kb)
     except Exception as e:
         print(f"menu_create error: {e}")
         try:
@@ -330,12 +334,12 @@ async def menu_delete(callback: CallbackQuery):
     try:
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
-        text, entities = delete_account_message(lang)
+        text = await get_message_text(lang, "delete_account_guide")
+        # Use HTML method (same as other working pages) — no entities
         await _safe_edit(
             callback,
             text,
             reply_markup=await back_keyboard(lang),
-            entities=entities,
         )
     except Exception as e:
         print(f"menu_delete error: {e}")
