@@ -155,8 +155,16 @@ async def receive_trader_id(message: Message, bot: Bot):
             return
 
         lang = user.language or "bn"
-        user.trader_id = trader_id
 
+        # --- Same ID already verified → just say already verified ---
+        if user.is_verified and user.trader_id and user.trader_id == trader_id:
+            await message.answer(
+                await get_message_text(lang, "already_verified"),
+                reply_markup=await main_menu(lang),
+            )
+            return
+
+        # Check postback for THIS trader_id (do NOT save yet)
         pb_count = await session.scalar(
             select(func.count()).select_from(PostbackLog).where(
                 PostbackLog.trader_id == trader_id
@@ -170,7 +178,6 @@ async def receive_trader_id(message: Message, bot: Bot):
                 )
             ) or 0
         )
-        total = max(dep_sum, float(user.total_deposit or 0))
 
         log_result = await session.execute(
             select(PostbackLog)
@@ -179,17 +186,9 @@ async def receive_trader_id(message: Message, bot: Bot):
             .limit(1)
         )
         last_log = log_result.scalar_one_or_none()
-        if last_log and last_log.country:
-            user.country = last_log.country
 
-        if total > float(user.total_deposit or 0):
-            user.total_deposit = total
-            user.last_deposit = total
-
-        await session.commit()
-
-        # No postback = not from our affiliate link
-        if pb_count == 0 and not user.is_verified:
+        # --- Invalid ID (no postback) → REJECT, do NOT save ---
+        if pb_count == 0:
             await message.answer(
                 await get_message_text(
                     lang,
@@ -201,10 +200,24 @@ async def receive_trader_id(message: Message, bot: Bot):
                 disable_web_page_preview=True,
                 reply_markup=await verify_fail_keyboard(lang, register_url),
             )
+            # Important: do NOT touch user.trader_id / is_verified / status
             return
 
-        # Account found via our link, but minimum deposit not reached
-        if total < min_dep and not user.is_verified:
+        # From here ID is valid (has postback from our link)
+        total = max(dep_sum, float(user.total_deposit or 0))
+
+        # Account found but minimum deposit not reached
+        if total < min_dep:
+            # Only update trader_id if not yet verified (or switching to new valid ID)
+            # Still do not mark verified
+            user.trader_id = trader_id
+            if last_log and last_log.country:
+                user.country = last_log.country
+            if total > float(user.total_deposit or 0):
+                user.total_deposit = total
+                user.last_deposit = total
+            await session.commit()
+
             await message.answer(
                 await get_message_text(
                     lang,
@@ -217,12 +230,22 @@ async def receive_trader_id(message: Message, bot: Bot):
             )
             return
 
+        # Valid ID + deposit OK → verify / re-verify with new ID
+        user.trader_id = trader_id
+        if last_log and last_log.country:
+            user.country = last_log.country
+        if total > float(user.total_deposit or 0):
+            user.total_deposit = total
+            user.last_deposit = total
+
         if not user.is_verified:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
-            await session.commit()
+        # If already verified but new valid ID → keep verified, update trader_id
 
-        # Prefer unique 1-use invite; falls back to admin static VIP link
+        await session.commit()
+
+        # Create new unique invite link
         vip_link = await create_unique_invite(bot, tg_id)
         if not vip_link:
             vip_link = await get_vip_group_link()
@@ -231,7 +254,6 @@ async def receive_trader_id(message: Message, bot: Bot):
             user.invite_link = vip_link
             await session.commit()
 
-            # VIP success: NO inline keyboard (no Back / Menu buttons)
             await message.answer(
                 await get_message_text(
                     lang,
@@ -245,6 +267,7 @@ async def receive_trader_id(message: Message, bot: Bot):
         else:
             await message.answer(
                 await get_message_text(lang, "already_verified"),
+                reply_markup=await main_menu(lang),
             )
 
 
