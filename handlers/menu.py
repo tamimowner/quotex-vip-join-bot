@@ -292,12 +292,25 @@ async def menu_support(callback: CallbackQuery):
     try:
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
+
+        # Prefer locale HTML version (with custom emoji)
+        # Only use DB override if it contains tg-emoji (so custom emoji still work)
         support = await get_message_text(lang, "support")
-        custom = await get_support_text(lang)
         msg_ov = await get_setting(f"msg_support_{lang}", "")
-        if custom and not msg_ov:
-            support = custom
-        await _safe_edit(callback, support, reply_markup=await back_keyboard(lang))
+        if msg_ov and "<tg-emoji" in msg_ov:
+            support = msg_ov
+        else:
+            custom = await get_support_text(lang)
+            if custom and "<tg-emoji" in custom:
+                support = custom
+
+        # Always send NEW message with HTML so custom emoji work reliably
+        await callback.message.answer(
+            support,
+            reply_markup=await back_keyboard(lang),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
     except Exception as e:
         print(f"menu_support error: {e}")
     await callback.answer()
