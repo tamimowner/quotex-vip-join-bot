@@ -51,16 +51,16 @@ def build_parts(
 
 
 def create_account_message(lang: str, register_url: str, min_deposit: int) -> tuple[str, list[MessageEntity]]:
-    """Create-account guide — premium custom emoji + bold steps."""
+    """Create-account guide — only custom premium emoji."""
     url = (register_url or "").strip()
     is_en = (lang or "bn").lower() == "en"
 
-    # Emoji IDs from user
-    E_TITLE = "6105169455757661838"
-    E_STEP = "5938069973535559743"
-    E_LINK = "5042101437237036298"
-    E_PASS = "6095821244689554590"
-    E_DONE = "6273749318717412886"
+    # Custom emoji IDs (from user)
+    E_TITLE = "6105169455757661838"   # ✨
+    E_STEP  = "5938069973535559743"   # ➡️
+    E_LINK  = "5042101437237036298"   # 🔗
+    E_PASS  = "6095821244689554590"   # 🔑
+    E_DONE  = "6273749318717412886"   # ✅
 
     if is_en:
         parts = [
@@ -68,47 +68,47 @@ def create_account_message(lang: str, register_url: str, min_deposit: int) -> tu
             (" How to create a new Quotex account", None, True),
             ("\n\n", None),
             ("➡️", E_STEP),
-            ("1. Click my link:\n", None),
+            (" 1. Click my link:\n", None),
             ("🔗", E_LINK),
-            (f"  {url}\n\n", None),
+            (f" {url}\n\n", None),
             ("➡️", E_STEP),
-            ("2. Select country, new email & strong password ", None),
+            (" 2. Select country, new email and strong password ", None),
             ("🔑", E_PASS),
             ("\n\n", None),
             ("➡️", E_STEP),
-            ("3. Accept the terms\n\n", None),
+            (" 3. Accept the terms\n\n", None),
             ("➡️", E_STEP),
-            ("4. Click Register – registration successful.\n\n", None),
+            (" 4. Click Register – account registration successful.\n\n", None),
             ("➡️", E_STEP),
-            ("5. Check email – you will get a verification link – verify your email.\n\n", None),
+            (" 5. Check your email – you will get a verification link – verify your email.\n\n", None),
             ("➡️", E_STEP),
-            ("6. Then go to your Profile and verify account with Documents (Identity Verification).\n\n", None),
+            (" 6. Then go to Profile and verify account with Documents (Identity Verification).\n\n", None),
             ("✅", E_DONE),
-            ("Done! Your account is ready for deposit.", None),
+            (" Done! Your account is ready for deposit.", None),
         ]
     else:
         parts = [
             ("✨", E_TITLE),
-            ("কীভাবে একটি নতুন Quotex অ্যাকাউন্ট তৈরি করবেন", None, True),
+            (" কীভাবে একটি নতুন Quotex অ্যাকাউন্ট তৈরি করবেন", None, True),
             ("\n\n", None),
             ("➡️", E_STEP),
-            ("১. আমার লিংকে ক্লিক করুন:\n", None),
+            (" ১. আমার লিংকে ক্লিক করুন:\n", None),
             ("🔗", E_LINK),
-            (f"  {url}\n\n", None),
+            (f" {url}\n\n", None),
             ("➡️", E_STEP),
-            ("২. দেশ নির্বাচন করুন, নতুন ইমেইল এবং শক্তিশালী পাসওয়ার্ড দিন ", None),
+            (" ২. দেশ নির্বাচন করুন, নতুন ইমেইল এবং শক্তিশালী পাসওয়ার্ড দিন ", None),
             ("🔑", E_PASS),
             ("\n\n", None),
             ("➡️", E_STEP),
-            ("৩. শর্তাবলী গ্রহণ করুন\n\n", None),
+            (" ৩. শর্তাবলী গ্রহণ করুন\n\n", None),
             ("➡️", E_STEP),
-            ("৪. রেজিস্ট্রেশন ক্লিক করুন – অ্যাকাউন্ট রেজিস্ট্রেশন সফল হয়েছে।\n\n", None),
+            (" ৪. রেজিস্ট্রেশন ক্লিক করুন – অ্যাকাউন্ট রেজিস্ট্রেশন সফল হয়েছে।\n\n", None),
             ("➡️", E_STEP),
-            ("৫. আপনার ইমেইল চেক করুন – আপনি ভেরিফিকেশনের জন্য একটি লিংক পাবেন – আপনার ইমেইল ভেরিফাই করুন।\n\n", None),
+            (" ৫. আপনার ইমেইল চেক করুন – আপনি ভেরিফিকেশনের জন্য একটি লিংক পাবেন – আপনার ইমেইল ভেরিফাই করুন।\n\n", None),
             ("➡️", E_STEP),
-            ("৬. তারপর আপনার প্রোফাইলে যান এবং ডকুমেন্টস (আইডেন্টিটি ভেরিফিকেশন) দিয়ে অ্যাকাউন্ট ভেরিফাই করুন।\n\n", None),
+            (" ৬. তারপর আপনার প্রোফাইলে যান এবং ডকুমেন্টস (আইডেন্টিটি ভেরিফিকেশন) দিয়ে অ্যাকাউন্ট ভেরিফাই করুন।\n\n", None),
             ("✅", E_DONE),
-            ("সম্পন্ন! আপনার অ্যাকাউন্ট ডিপোজিটের জন্য প্রস্তুত।", None),
+            (" সম্পন্ন! আপনার অ্যাকাউন্ট ডিপোজিটের জন্য প্রস্তুত।", None),
         ]
 
     text, entities = build_parts(parts)
@@ -130,39 +130,43 @@ def create_account_message(lang: str, register_url: str, min_deposit: int) -> tu
 
 
 def delete_account_message(lang: str) -> tuple[str, list[MessageEntity]]:
-    E_TITLE = "5298742255912235479"
-    E1 = "5235547326889608764"
-    E2 = "5235547326889608764"
-    E3 = "5235919365546724452"
-    E4 = "5238105937692085546"
+    """Delete-account guide — only custom premium emoji (screenshot style)."""
+    # Re-use same custom IDs for consistency + title
+    E_TITLE = "5298742255912235479"   # ❌
+    E_STEP  = "5938069973535559743"   # ➡️
+    E_DONE  = "6273749318717412886"   # ✅
 
     if (lang or "bn").lower() == "en":
         parts = [
             ("❌", E_TITLE),
-            (" How to delete old Quotex account", None, True),
-            ("\n━━━━━━━━━━━━━━━━\n\n", None),
-            ("1", E1),
-            (". Login to old account\n\n", None, True),
-            ("2", E2),
-            (". Profile / Settings\n\n", None, True),
-            ("3", E3),
-            (". Request account deletion\n\n", None, True),
-            ("4", E4),
-            (". Create a new account with our link", None, True),
+            (" How to delete your old Quotex account", None, True),
+            ("\n\n", None),
+            ("➡️", E_STEP),
+            (" 1. Go to Profile option\n\n", None),
+            ("➡️", E_STEP),
+            (" 2. Scroll down and select Account Delete\n\n", None),
+            ("➡️", E_STEP),
+            (" 3. Check your email – you will get a link to delete the account\n\n", None),
+            ("➡️", E_STEP),
+            (" 4. Click the link in email – account deleted successfully.\n\n", None),
+            ("✅", E_DONE),
+            (" Now you can register a new account using our affiliate link.", None),
         ]
     else:
         parts = [
             ("❌", E_TITLE),
-            (" কীভাবে পুরাতন কোটেক্স অ্যাকাউন্ট ডিলিট করবেন", None, True),
-            ("\n━━━━━━━━━━━━━━━━\n\n", None),
-            ("1", E1),
-            (". পুরোনো অ্যাকাউন্টে লগইন\n\n", None, True),
-            ("2", E2),
-            (". প্রোফাইল / সেটিংস\n\n", None, True),
-            ("3", E3),
-            (". অ্যাকাউন্ট ডিলিট রিকোয়েস্ট\n\n", None, True),
-            ("4", E4),
-            (". আমাদের লিংক দিয়ে নতুন অ্যাকাউন্ট তৈরি", None, True),
+            (" কীভাবে আপনার পুরাতন Quotex অ্যাকাউন্ট ডিলিট করবেন", None, True),
+            ("\n\n", None),
+            ("➡️", E_STEP),
+            (" ১. প্রোফাইল অপশনে যান\n\n", None),
+            ("➡️", E_STEP),
+            (" ২. নিচে স্ক্রোল করুন এবং অ্যাকাউন্ট ডিলিট সিলেক্ট করুন\n\n", None),
+            ("➡️", E_STEP),
+            (" ৩. আপনার ইমেইল চেক করুন – আপনি অ্যাকাউন্ট ডিলিট করার জন্য একটি লিংক পাবেন\n\n", None),
+            ("➡️", E_STEP),
+            (" ৪. ইমেইলে প্রাপ্ত লিংকে ক্লিক করুন – অ্যাকাউন্ট সফলভাবে ডিলিট হয়েছে।\n\n", None),
+            ("✅", E_DONE),
+            (" এখন আপনি আমাদের অ্যাফিলিয়েট লিংক ব্যবহার করে একটি নতুন অ্যাকাউন্ট রেজিস্ট্রেশন করতে পারেন।", None),
         ]
 
     return build_parts(parts)
