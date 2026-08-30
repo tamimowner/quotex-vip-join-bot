@@ -19,6 +19,7 @@ from services.settings_store import (
 )
 from handlers.start import get_bot_display_name
 from services.messages import get_message_text
+from config import settings
 
 router = Router()
 
@@ -247,27 +248,30 @@ async def menu_status(callback: CallbackQuery):
             joined=joined,
         )
 
-        async with async_session() as session:
-            q = (
-                select(PostbackLog)
-                .where(PostbackLog.trader_id == (user.trader_id or ""))
-                .order_by(PostbackLog.id.desc())
-                .limit(8)
-            )
-            result = await session.execute(q)
-            logs = result.scalars().all()
-
-        if logs:
-            text += "\n\n" + await get_message_text(lang, "history_title") + "\n"
-            for log in logs:
-                when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
-                text += (
-                    f"• {when} | status=<code>{log.status or '-'}</code> "
-                    f"dep=${float(log.sumdep or 0):.2f} "
-                    f"uid=<code>{log.trader_id or '-'}</code>\n"
+        # Postback history: ONLY for admins
+        is_admin = callback.from_user.id in settings.admin_ids
+        if is_admin:
+            async with async_session() as session:
+                q = (
+                    select(PostbackLog)
+                    .where(PostbackLog.trader_id == (user.trader_id or ""))
+                    .order_by(PostbackLog.id.desc())
+                    .limit(8)
                 )
-        else:
-            text += "\n\n" + await get_message_text(lang, "history_empty")
+                result = await session.execute(q)
+                logs = result.scalars().all()
+
+            if logs:
+                text += "\n\n" + await get_message_text(lang, "history_title") + "\n"
+                for log in logs:
+                    when = log.created_at.strftime("%m-%d %H:%M") if log.created_at else "-"
+                    text += (
+                        f"• {when} | status=<code>{log.status or '-'}</code> "
+                        f"dep=${float(log.sumdep or 0):.2f} "
+                        f"uid=<code>{log.trader_id or '-'}</code>\n"
+                    )
+            else:
+                text += "\n\n" + await get_message_text(lang, "history_empty")
 
         await _safe_edit(callback, text, reply_markup=await back_keyboard(lang))
     except Exception as e:
