@@ -14,7 +14,8 @@ from services.messages import get_message_text
 
 router = Router()
 
-TRADER_ID_RE = re.compile(r"^[0-9]{6,12}$")
+# Quotex Trader ID = exactly 8 digits
+TRADER_ID_RE = re.compile(r"^[0-9]{8}$")
 
 _bot_name_cache: str | None = None
 
@@ -138,7 +139,7 @@ async def set_language(callback: CallbackQuery, bot: Bot):
     await callback.answer()
 
 
-@router.message(F.text.regexp(r"^[0-9]{6,12}$"))
+@router.message(F.text.regexp(r"^[0-9]{8}$"))
 async def receive_trader_id(message: Message, bot: Bot):
     trader_id = (message.text or "").strip()
     tg_id = message.from_user.id
@@ -208,8 +209,6 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         # Account found but minimum deposit not reached
         if total < min_dep:
-            # Only update trader_id if not yet verified (or switching to new valid ID)
-            # Still do not mark verified
             user.trader_id = trader_id
             if last_log and last_log.country:
                 user.country = last_log.country
@@ -241,7 +240,6 @@ async def receive_trader_id(message: Message, bot: Bot):
         if not user.is_verified:
             user.is_verified = True
             user.verified_at = datetime.utcnow()
-        # If already verified but new valid ID → keep verified, update trader_id
 
         await session.commit()
 
