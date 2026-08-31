@@ -8,7 +8,7 @@ from database.models import User, PostbackLog
 from database.db import async_session
 from keyboards import language_keyboard, main_menu, premium_keyboard, verify_fail_keyboard
 from config import settings
-from services.settings_store import get_affiliate_url, get_min_deposit, get_vip_group_link
+from services.settings_store import get_setting, get_affiliate_url, get_min_deposit, get_vip_group_link
 from services.invite import create_unique_invite
 from services.messages import get_message_text
 
@@ -49,7 +49,29 @@ async def _send_welcome(
         botName=bot_name,
         register_url=register_url,
     )
-    # Welcome photo removed — text only
+    file_id = await get_setting("welcome_photo_file_id", "")
+    photo_url = await get_setting("welcome_photo_url", "")
+
+    try:
+        if file_id:
+            await target.answer_photo(
+                photo=file_id,
+                caption=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+            )
+            return
+        if photo_url:
+            await target.answer_photo(
+                photo=photo_url,
+                caption=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+            )
+            return
+    except Exception as e:
+        print(f"Welcome photo failed: {e}")
+
     await target.answer(
         text,
         reply_markup=reply_markup,
