@@ -210,6 +210,28 @@ async def menu_premium(callback: CallbackQuery):
     await callback.answer()
 
 
+@router.callback_query(F.data == "menu:basic")
+async def menu_basic(callback: CallbackQuery):
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = (user.language if user else None) or "bn"
+        register_url = await get_affiliate_url()
+        text = await get_message_text(
+            lang,
+            "basic_info",
+            register_url=register_url or "",
+        )
+        await callback.message.answer(
+            text,
+            reply_markup=await premium_keyboard(lang, register_url),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    except Exception as e:
+        print(f"menu_basic error: {e}")
+    await callback.answer()
+
+
 @router.callback_query(F.data == "menu:status")
 async def menu_status(callback: CallbackQuery):
     try:
