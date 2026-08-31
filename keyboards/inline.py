@@ -95,16 +95,10 @@ async def main_menu(lang: str) -> InlineKeyboardMarkup:
     for i in range(0, len(built), 2):
         rows.append(built[i : i + 2])
 
-    settings_text = await get_button_text("btn_settings", lang)
-    if not settings_text or settings_text == "btn_settings":
-        settings_text = get_text(lang, "btn_settings") or "Settings"
+    # Language switch on homepage (Settings removed)
     rows.append([
-        await _btn(
-            settings_text,
-            callback_data="menu:settings",
-            style="primary",
-            icon_custom_emoji_id=await _icon_for("btn_settings"),
-        ),
+        InlineKeyboardButton(text="🇬🇧 English", callback_data="lang:en", style="primary"),
+        InlineKeyboardButton(text="🇧🇩 বাংলা", callback_data="lang:bn", style="success"),
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -153,7 +147,7 @@ async def settings_language_keyboard(lang: str) -> InlineKeyboardMarkup:
         [
             await _btn(
                 await get_button_text("btn_back", lang),
-                callback_data="menu:settings",
+                callback_data="menu:back",
                 style="primary",
                 icon_custom_emoji_id=await _icon_for("btn_back"),
             ),
