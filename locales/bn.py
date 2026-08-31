@@ -85,22 +85,18 @@ TEXTS = {
         "আরও ডিপোজিট করুন, তারপর Trader ID পাঠান বা অপেক্ষা করুন।"
     ),
     "not_from_our_link": (
-        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
-        "<b>যাচাই ব্যর্থ!</b>\n\n"
-        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
-        "Trader ID <code>{trader_id}</code> আমাদের Affiliate Link দিয়ে তৈরি করা হয়নি।"
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="6300891304414938793">»</tg-emoji> '
-        "অনুগ্রহ করে পুরোনো Account Delete করে নিচের Affiliate Link থেকে নতুন Account তৈরি করুন।"
-        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="6214983170991853422">🔗</tg-emoji> '
-        "Account Create URL :- {register_url}\n\n"
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Account Verify করুন\n'
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> প্রথম Deposit সম্পন্ন করুন\n'
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
-        "তারপর আপনার নতুন ৮ সংখ্যার Trader ID আবার পাঠান\n\n"
-        "ধন্যবাদ। "
-        '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
+        '<tg-emoji emoji-id="6131671482738152492">👎</tg-emoji> '
+        "<b>Trader ID পাওয়া যায়নি</b>\n\n"
+        "আপনার Trader ID আমাদের সিস্টেমে পাওয়া যায়নি।\n"
+        "দয়া করে আপনার নির্ধারিত লিংক থেকে অ্যাকাউন্ট তৈরি করে Trader ID আমাদের কাছে আবার পাঠান।\n\n"
+        '<tg-emoji emoji-id="6131867157153191252">✔️</tg-emoji> '
+        "অ্যাকাউন্ট তৈরি করে Trader ID পাঠালে আপনাকে "
+        "<b>Basic Group / Basic Class Group</b>-এ যুক্ত করা হবে।\n\n"
+        '<tg-emoji emoji-id="6132168784116454807">🔥</tg-emoji> '
+        "Trader ID সঠিকভাবে পাঠানোর পর আমাদের টিম আপনার তথ্য যাচাই করে পরবর্তী নির্দেশনা জানাবে।\n\n"
+        '<tg-emoji emoji-id="6132162165571851142">🔗</tg-emoji> '
+        "<b>Account Create Link:</b>\n"
+        "{register_url}"
     ),
     "need_deposit_hint": (
         '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
