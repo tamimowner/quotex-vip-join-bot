@@ -157,13 +157,19 @@ TEXTS = {
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
         "Your Trader ID:\n"
         "<code>{trader_id}</code>\n\n"
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "Join the VIP group: "
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n'
+        "━━━━━━━━━━━━━━━━\n"
+        '<tg-emoji emoji-id="5217822164362739968">👑</tg-emoji> '
+        "<b>VIP Group</b>\n"
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
         '<a href="{link}">Click here to join the VIP group</a>\n\n'
+        '<tg-emoji emoji-id="6132168784116454807">🔥</tg-emoji> '
+        "<b>ADVANCE Course Group</b>\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        '<a href="https://t.me/+bHS9UDzwZM4wMjRl">Click here to join the ADVANCE group</a>\n'
+        "https://t.me/+bHS9UDzwZM4wMjRl\n"
+        "━━━━━━━━━━━━━━━━\n\n"
         '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
-        "Enjoy VIP benefits!\n"
+        "Enjoy VIP & ADVANCE benefits!\n"
         '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji> '
         "Questions? Contact: @SK_SupportOfficial"
     ),
