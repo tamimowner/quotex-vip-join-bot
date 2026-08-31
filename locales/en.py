@@ -84,22 +84,18 @@ TEXTS = {
         "Please deposit more, then send Trader ID or wait."
     ),
     "not_from_our_link": (
-        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
-        "<b>Verification failed!</b>\n\n"
-        '<tg-emoji emoji-id="6217296801154731905">🟢</tg-emoji> '
-        "Trader ID <code>{trader_id}</code> was not created with our Affiliate Link."
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="6300891304414938793">»</tg-emoji> '
-        "Please delete the old account and create a new one using the Affiliate Link below."
-        '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="6214983170991853422">🔗</tg-emoji> '
-        "Account Create URL :- {register_url}\n\n"
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Verify your Account\n'
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> Complete the first Deposit\n'
-        '<tg-emoji emoji-id="6217732620076191135">✅</tg-emoji> '
-        "Then send your new 8-digit Trader ID again\n\n"
-        "Thank you. "
-        '<tg-emoji emoji-id="6201956329024653832">💙</tg-emoji>'
+        '<tg-emoji emoji-id="6131671482738152492">👎</tg-emoji> '
+        "<b>Trader ID not found</b>\n\n"
+        "Your Trader ID was not found in our system.\n"
+        "Please create an account from the designated link and send the Trader ID to us again.\n\n"
+        '<tg-emoji emoji-id="6131867157153191252">✔️</tg-emoji> '
+        "After creating an account and sending the Trader ID, you will be added to the "
+        "<b>Basic Group / Basic Class Group</b>.\n\n"
+        '<tg-emoji emoji-id="6132168784116454807">🔥</tg-emoji> '
+        "Once the Trader ID is sent correctly, our team will verify your details and share the next instructions.\n\n"
+        '<tg-emoji emoji-id="6132162165571851142">🔗</tg-emoji> '
+        "<b>Account Create Link:</b>\n"
+        "{register_url}"
     ),
     "need_deposit_hint": (
         '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
