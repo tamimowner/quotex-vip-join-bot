@@ -18,7 +18,7 @@ from services.settings_store import (
     get_min_deposit,
     get_vip_group_link,
 )
-from handlers.start import get_bot_display_name
+from handlers.start import get_bot_display_name, _send_welcome
 from services.messages import get_message_text
 from config import settings
 
@@ -124,15 +124,14 @@ async def menu_back(callback: CallbackQuery, bot: Bot):
     try:
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
-        bot_name = await get_bot_display_name(bot)
-        register_url = await get_affiliate_url()
-        text = await get_message_text(
+        # Send home with welcome photo (same as /start)
+        await _send_welcome(
+            callback.message,
             lang,
-            "welcome",
-            botName=bot_name,
-            register_url=register_url,
+            callback.from_user.id,
+            bot,
+            reply_markup=await main_menu(lang),
         )
-        await _safe_edit(callback, text, reply_markup=await main_menu(lang))
     except Exception as e:
         print(f"menu_back error: {e}")
     await callback.answer()
