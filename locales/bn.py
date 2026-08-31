@@ -158,13 +158,19 @@ TEXTS = {
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>\n\n'
         "আপনার Trader ID:\n"
         "<code>{trader_id}</code>\n\n"
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "VIP গ্রুপে যোগ দিন: "
-        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji>\n'
+        "━━━━━━━━━━━━━━━━\n"
+        '<tg-emoji emoji-id="5217822164362739968">👑</tg-emoji> '
+        "<b>VIP গ্রুপ</b>\n"
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
         '<a href="{link}">ক্লিক করুন VIP গ্রুপে যোগ দিতে</a>\n\n'
+        '<tg-emoji emoji-id="6132168784116454807">🔥</tg-emoji> '
+        "<b>ADVANCE কোর্স গ্রুপ</b>\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        '<a href="https://t.me/+bHS9UDzwZM4wMjRl">ক্লিক করুন ADVANCE গ্রুপে যোগ দিতে</a>\n'
+        "https://t.me/+bHS9UDzwZM4wMjRl\n"
+        "━━━━━━━━━━━━━━━━\n\n"
         '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
-        "VIP সুবিধা উপভোগ করুন!\n"
+        "VIP ও ADVANCE সুবিধা উপভোগ করুন!\n"
         '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji> '
         "প্রশ্ন থাকলে: @SK_SupportOfficial"
     ),
