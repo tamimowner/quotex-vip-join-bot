@@ -18,8 +18,7 @@ TEXTS = {
 
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
         "<b>শুধু বেসিক গ্রুপে</b> জয়েন হতে চাইলে (VIP ছাড়া) — "
-        "নিচের মেনু থেকে <b>সব সোশ্যাল মিডিয়া</b> বা <b>সাপোর্ট</b> ব্যবহার করুন; "
-        "সেখান থেকে বেসিক গ্রুপে যোগ দেওয়া যাবে।\n\n"
+        "নিচের মেনু থেকে <b>বেসিক / কোর্স গ্রুপ</b> বাটন দেখুন।\n\n"
 
         '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
         "শুধুমাত্র ইংরেজি <b>৮ সংখ্যার</b> Quotex Trader ID পাঠাবেন।\n"
@@ -35,6 +34,7 @@ TEXTS = {
     "main_menu": "মেইন মেনু",
 
     "btn_premium": "VIP জয়েন",
+    "btn_basic": "বেসিক / কোর্স গ্রুপ",
     "btn_create_account": "নতুন Quotex অ্যাকাউন্ট",
     "btn_delete_account": "অ্যাকাউন্ট ডিলিট",
     "btn_public": "সব সোশ্যাল মিডিয়া",
@@ -116,6 +116,39 @@ TEXTS = {
         "শুধু বটের দেওয়া Affiliate Link ব্যবহার করুন।\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
+
+    "basic_info": (
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        "<b>বেসিক গ্রুপ / কোর্স গ্রুপ জয়েন</b> "
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
+
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "<b>নিয়ম (সহজ):</b>\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "১. নিচের <b>Affiliate Link</b> দিয়ে Quotex অ্যাকাউন্ট তৈরি করুন\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "২. অ্যাকাউন্ট ভেরিফাই করুন\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "৩. বটে আপনার <b>৮ সংখ্যার Trader ID</b> পাঠান\n\n"
+
+        '<tg-emoji emoji-id="6131867157153191252">✔️</tg-emoji> '
+        "<b>শুধুমাত্র অ্যাকাউন্ট তৈরি করে Trader ID পাঠালেই</b> "
+        "আপনাকে <b>Basic Group / Basic Course Group</b>-এ যুক্ত করা হবে।\n\n"
+
+        '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
+        "VIP গ্রুপের জন্য আলাদা নিয়ম ও ডিপোজিট লাগতে পারে — "
+        "VIP চাইলে <b>VIP জয়েন</b> বাটন ব্যবহার করুন।\n\n"
+
+        "━━━━━━━━━━━━━━━━\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        "<b>Account Create Link:</b>\n"
+        "{register_url}\n"
+        "━━━━━━━━━━━━━━━━"
+    ),
+
     "waiting_deposit": "আপনার ডিপোজিটের অপেক্ষায়...",
     "already_verified": "আপনি ইতিমধ্যে ভেরিফাইড!",
 
