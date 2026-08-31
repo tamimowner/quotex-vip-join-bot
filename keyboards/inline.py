@@ -15,6 +15,7 @@ DEFAULT_ICONS = {
     "btn_tutorial": "5814161253672687027",
     "btn_back": "6300891304414938793",
     "btn_settings": "",
+    "btn_exness": "5217822164362739968",
 }
 
 
@@ -67,6 +68,7 @@ async def main_menu(lang: str) -> InlineKeyboardMarkup:
         ("btn_status", "menu:status", "primary"),
         ("btn_create_account", "menu:create", "primary"),
         ("btn_delete_account", "menu:delete", "danger"),
+        ("btn_exness", "menu:exness", "success"),
         ("btn_public", "menu:public", "primary"),
         ("btn_support", "menu:support", "primary"),
     ]
@@ -186,6 +188,38 @@ async def premium_keyboard(lang: str, register_url: str) -> InlineKeyboardMarkup
             btn_back,
             callback_data="menu:back",
             style=style_back or "primary",
+            icon_custom_emoji_id=await _icon_for("btn_back"),
+        )
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def exness_keyboard(lang: str) -> InlineKeyboardMarkup:
+    """Exness page: open partner link + back."""
+    open_text = get_text(lang, "btn_exness_open") or "Exness Account খুলুন"
+    btn_back = await get_button_text("btn_back", lang)
+    if not btn_back or btn_back == "btn_back":
+        btn_back = get_text(lang, "btn_back") or "Back"
+
+    exness_url = (
+        await get_setting("exness_link", "") or ""
+    ).strip() or "https://one.exnessonelink.com/a/a16d50an4d"
+
+    rows = []
+    if exness_url.startswith("http"):
+        rows.append([
+            await _btn(
+                open_text,
+                url=exness_url,
+                style="success",
+                icon_custom_emoji_id=await _icon_for("btn_exness"),
+            )
+        ])
+    rows.append([
+        await _btn(
+            btn_back,
+            callback_data="menu:back",
+            style="primary",
             icon_custom_emoji_id=await _icon_for("btn_back"),
         )
     ])
