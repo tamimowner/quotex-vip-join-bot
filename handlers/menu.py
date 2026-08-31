@@ -169,35 +169,10 @@ async def settings_lang(callback: CallbackQuery):
 
 @router.callback_query(F.data == "menu:premium")
 async def menu_premium(callback: CallbackQuery):
+    """Always show VIP join process (same as new users). invite_ready only after Trader ID."""
     try:
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
-
-        if user and user.is_verified:
-            vip_link = user.invite_link or await get_vip_group_link()
-            if vip_link:
-                await _safe_edit(
-                    callback,
-                    await get_message_text(
-                        lang,
-                        "invite_ready",
-                        link=vip_link,
-                        trader_id=user.trader_id or "-",
-                    ),
-                    reply_markup=None,
-                )
-                await callback.answer()
-                return
-
-        if user and user.has_joined:
-            await _safe_edit(
-                callback,
-                await get_message_text(lang, "already_joined"),
-                reply_markup=await back_keyboard(lang),
-            )
-            await callback.answer()
-            return
-
         register_url = await get_affiliate_url()
         await _safe_edit(
             callback,
