@@ -16,6 +16,7 @@ DEFAULT_ICONS = {
     "btn_back": "6300891304414938793",
     "btn_settings": "",
     "btn_exness": "5217822164362739968",
+    "btn_basic": "5215174853895660531",
 }
 
 
@@ -65,6 +66,7 @@ async def _icon_for(key: str) -> str | None:
 async def main_menu(lang: str) -> InlineKeyboardMarkup:
     items = [
         ("btn_premium", "menu:premium", "success"),
+        ("btn_basic", "menu:basic", "primary"),
         ("btn_status", "menu:status", "primary"),
         ("btn_create_account", "menu:create", "primary"),
         ("btn_delete_account", "menu:delete", "danger"),
