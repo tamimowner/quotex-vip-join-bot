@@ -9,6 +9,7 @@ from keyboards import (
     back_keyboard,
     settings_keyboard,
     settings_language_keyboard,
+    exness_keyboard,
 )
 from services.settings_store import (
     get_affiliate_url,
@@ -317,6 +318,24 @@ async def menu_support(callback: CallbackQuery):
         )
     except Exception as e:
         print(f"menu_support error: {e}")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:exness")
+async def menu_exness(callback: CallbackQuery):
+    try:
+        user = await get_user(callback.from_user.id)
+        lang = (user.language if user else None) or "bn"
+        text = await get_message_text(lang, "exness_info")
+        # Force new message + HTML so custom emoji works
+        await callback.message.answer(
+            text,
+            reply_markup=await exness_keyboard(lang),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    except Exception as e:
+        print(f"menu_exness error: {e}")
     await callback.answer()
 
 
