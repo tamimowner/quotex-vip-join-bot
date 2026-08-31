@@ -17,7 +17,7 @@ TEXTS = {
         "A <b>deposit is required</b> to be added to VIP (if a minimum amount is set).\n\n"
 
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
-        "Want <b>Basic group only</b> (without VIP)? Use <b>All Social Media</b> or <b>Support</b> from the menu to join the basic groups.\n\n"
+        "Want <b>Basic / Course group only</b>? Use the <b>Basic / Course Group</b> button in the menu.\n\n"
 
         '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
         "Send only an English <b>8-digit</b> Quotex Trader ID.\n"
@@ -32,8 +32,8 @@ TEXTS = {
 
     "main_menu": "Main Menu",
 
-    # Button labels — NO normal emoji (add custom via Admin)
     "btn_premium": "VIP Join",
+    "btn_basic": "Basic / Course Group",
     "btn_create_account": "New Quotex Account",
     "btn_delete_account": "Delete Account",
     "btn_public": "All Social Media",
@@ -115,6 +115,39 @@ TEXTS = {
         "Use only our Affiliate Link.\n"
         "Partner ID (lid): <code>1480996</code>"
     ),
+
+    "basic_info": (
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        "<b>Basic Group / Course Group Join</b> "
+        '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
+
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "<b>Simple rules:</b>\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "1. Create a Quotex account with the <b>Affiliate Link</b> below\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "2. Verify your account\n\n"
+
+        '<tg-emoji emoji-id="5938069973535559743">➡️</tg-emoji> '
+        "3. Send your <b>8-digit Trader ID</b> to the bot\n\n"
+
+        '<tg-emoji emoji-id="6131867157153191252">✔️</tg-emoji> '
+        "<b>Just create an account and send the Trader ID</b> — "
+        "you will be added to the <b>Basic Group / Basic Course Group</b>.\n\n"
+
+        '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
+        "VIP has separate rules and may require a deposit — "
+        "use the <b>VIP Join</b> button for VIP.\n\n"
+
+        "━━━━━━━━━━━━━━━━\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        "<b>Account Create Link:</b>\n"
+        "{register_url}\n"
+        "━━━━━━━━━━━━━━━━"
+    ),
+
     "waiting_deposit": "Waiting for your deposit...",
     "already_verified": "You are already verified!",
 
