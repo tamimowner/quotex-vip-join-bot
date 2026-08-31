@@ -37,6 +37,8 @@ TEXTS = {
     "btn_register": "Register & Deposit",
     "btn_settings": "Settings",
     "btn_change_language": "Change Language",
+    "btn_exness": "Exness Account",
+    "btn_exness_open": "Open Exness Account",
 
     "settings_title": (
         "<b>Settings</b>\n\n"
@@ -229,6 +231,24 @@ TEXTS = {
         '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
         '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
         "@SK_SupportOfficial "
+        '<tg-emoji emoji-id="6217685925191750376">✅</tg-emoji>'
+    ),
+
+    "exness_info": (
+        '<tg-emoji emoji-id="5217822164362739968">👑</tg-emoji>'
+        "If you trade Forex with me, please open an <b>EXNESS</b> account using the link below "
+        '<tg-emoji emoji-id="5406745015365943482">⬇️</tg-emoji>\n\n'
+        "https://one.exnessonelink.com/a/a16d50an4d\n\n"
+        "If you need an EXNESS Partner Code, use this code to connect with me:\n\n"
+        "<b>PARTNER CODE</b> "
+        '<tg-emoji emoji-id="5416117059207572332">➡️</tg-emoji> '
+        "<code>a16d50an4d</code>\n\n"
+        '<tg-emoji emoji-id="6274034641984820525">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6275947023418003921">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6276161149012546258">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6275878355480875380">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
+        "@SK_SupportOfficial"
         '<tg-emoji emoji-id="6217685925191750376">✅</tg-emoji>'
     ),
 
