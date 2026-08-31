@@ -6,4 +6,5 @@ from keyboards.inline import (
     back_keyboard,
     settings_keyboard,
     settings_language_keyboard,
+    exness_keyboard,
 )
