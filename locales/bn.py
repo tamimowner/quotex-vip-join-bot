@@ -36,6 +36,8 @@ TEXTS = {
     "btn_register": "রেজিস্টার ও ডিপোজিট",
     "btn_settings": "সেটিংস",
     "btn_change_language": "ভাষা পরিবর্তন",
+    "btn_exness": "Exness অ্যাকাউন্ট",
+    "btn_exness_open": "Exness Account খুলুন",
 
     "settings_title": (
         "<b>সেটিংস</b>\n\n"
@@ -228,6 +230,25 @@ TEXTS = {
         '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
         '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
         "@SK_SupportOfficial "
+        '<tg-emoji emoji-id="6217685925191750376">✅</tg-emoji>'
+    ),
+
+    "exness_info": (
+        '<tg-emoji emoji-id="5217822164362739968">👑</tg-emoji>'
+        "আপনারা যারা আমার সাথে ফরেক্স মার্কেটে ট্রেড করবেন তারা নিচের লিংকে ক্লিক করে "
+        "<b>EXNESS</b> অ্যাকাউন্ট করে রাখবেন"
+        '<tg-emoji emoji-id="5406745015365943482">⬇️</tg-emoji>\n\n'
+        "https://one.exnessonelink.com/a/a16d50an4d\n\n"
+        "আপনাদের যাদের পার্টনার কোড দরকার EXNESS এর, আপনারা নিজের এই কোডের মাধ্যমে আমার সাথে যুক্ত হতে পারেন\n\n"
+        "<b>PARTNER CODE</b> "
+        '<tg-emoji emoji-id="5416117059207572332">➡️</tg-emoji> '
+        "<code>a16d50an4d</code>\n\n"
+        '<tg-emoji emoji-id="6274034641984820525">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6275947023418003921">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6276161149012546258">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="6275878355480875380">🔤</tg-emoji>'
+        '<tg-emoji emoji-id="5303489294285941333">➡️</tg-emoji>'
+        "@SK_SupportOfficial"
         '<tg-emoji emoji-id="6217685925191750376">✅</tg-emoji>'
     ),
 
