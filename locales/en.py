@@ -6,18 +6,26 @@ TEXTS = {
         '<tg-emoji emoji-id="5188481279963715781">👋</tg-emoji> '
         "Welcome to <b>{botName}</b>! "
         '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji>\n\n'
-        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
-        "To join the VIP Channel, send your Quotex <b>Trader ID</b>. "
+
+        '<tg-emoji emoji-id="5217822164362739968">👑</tg-emoji> '
+        "<b>To join the VIP group:</b>\n"
+        "Create a Quotex account from the link below and send your "
+        "<b>8-digit Trader ID</b>. "
         '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
+
         '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "If you have not opened an account with our Affiliate Link:\n\n"
-        "• Create a new Account using our Link\n"
-        "• Verify your Account\n"
-        "• Make the minimum deposit (if required)\n\n"
+        "A <b>deposit is required</b> to be added to VIP (if a minimum amount is set).\n\n"
+
+        '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
+        "Want <b>Basic group only</b> (without VIP)? Use <b>All Social Media</b> or <b>Support</b> from the menu to join the basic groups.\n\n"
+
         '<tg-emoji emoji-id="5420323339723881652">⚠️</tg-emoji> '
-        "Send only an English 6–12 digit Trader ID.\n\n"
+        "Send only an English <b>8-digit</b> Quotex Trader ID.\n"
+        "Example: <code>12345678</code>\n\n"
+
         "━━━━━━━━━━━━━━━━\n"
-        "🔗 <b>Quotex account create link:</b>\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        "<b>Quotex account create link:</b>\n"
         "{register_url}\n"
         "━━━━━━━━━━━━━━━━"
     ),
@@ -26,7 +34,7 @@ TEXTS = {
 
     # Button labels — NO normal emoji (add custom via Admin)
     "btn_premium": "VIP Join",
-    "btn_create_account": "New Account",
+    "btn_create_account": "New Quotex Account",
     "btn_delete_account": "Delete Account",
     "btn_public": "All Social Media",
     "btn_support": "Support",
@@ -48,7 +56,7 @@ TEXTS = {
 
     "invalid_trader_id": (
         "Invalid format.\n"
-        "Send only an English <b>6–12 digit</b> Trader ID.\n"
+        "Send only an English <b>8-digit</b> Quotex Trader ID.\n"
         "Example: <code>12345678</code>"
     ),
     "trader_id_saved": (
@@ -106,7 +114,7 @@ TEXTS = {
         "1. Click Register below\n"
         "2. Create a <b>new</b> Quotex account\n"
         "3. Make the minimum deposit (if required)\n"
-        "4. Send Trader ID to the bot\n"
+        "4. Send your <b>8-digit</b> Trader ID to the bot\n"
         "5. Get VIP group link after verification\n\n"
         "Use only our Affiliate Link.\n"
         "Partner ID (lid): <code>1480996</code>"
