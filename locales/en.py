@@ -14,7 +14,8 @@ TEXTS = {
         '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
 
         '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "A <b>deposit is required</b> to be added to VIP (if a minimum amount is set).\n\n"
+        "<b>Minimum deposit required for VIP:</b> "
+        "<b>${min_deposit}</b>\n\n"
 
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
         "Want <b>Basic / Course group only</b>? Use the <b>Basic / Course Group</b> button in the menu.\n\n"
@@ -109,7 +110,7 @@ TEXTS = {
         "<b>Premium / VIP Join Process</b>\n\n"
         "1. Click Register below\n"
         "2. Create a <b>new</b> Quotex account\n"
-        "3. Make the minimum deposit (if required)\n"
+        "3. Make the minimum deposit: <b>${min_deposit}</b>\n"
         "4. Send your <b>8-digit</b> Trader ID to the bot\n"
         "5. Get VIP group link after verification\n\n"
         "Use only our Affiliate Link.\n"
@@ -151,6 +152,15 @@ TEXTS = {
     "waiting_deposit": "Waiting for your deposit...",
     "already_verified": "You are already verified!",
 
+    "trader_id_already_used": (
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "<b>This Trader ID is already in use</b>\n\n"
+        "Trader ID: <code>{trader_id}</code>\n\n"
+        "One Trader ID can only be used on <b>one Telegram account</b>.\n"
+        "This ID is already verified on another account.\n\n"
+        "Questions? Contact: @SK_SupportOfficial"
+    ),
+
     "invite_ready": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
         "<b>Verification successful!</b> "
@@ -166,7 +176,12 @@ TEXTS = {
         "<b>ADVANCE Course Group</b>\n"
         '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
         '<a href="https://t.me/+bHS9UDzwZM4wMjRl">Click here to join the ADVANCE group</a>\n'
-        "https://t.me/+bHS9UDzwZM4wMjRl\n"
+        "https://t.me/+bHS9UDzwZM4wMjRl\n\n"
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "<b>Rules & Regulations</b> (must follow)\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        '<a href="https://t.me/+QENouQFoo-E4NGE1">Click here to view Rules</a>\n'
+        "https://t.me/+QENouQFoo-E4NGE1\n"
         "━━━━━━━━━━━━━━━━\n\n"
         '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
         "Enjoy VIP & ADVANCE benefits!\n"
