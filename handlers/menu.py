@@ -48,7 +48,6 @@ async def _safe_edit(
     msg = callback.message
     use_entities = bool(entities)
 
-    # Prefer new message for entity-based custom emoji (most reliable)
     if use_entities:
         try:
             await msg.answer(
@@ -124,7 +123,6 @@ async def menu_back(callback: CallbackQuery, bot: Bot):
     try:
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
-        # Send home with welcome photo (same as /start)
         await _send_welcome(
             callback.message,
             lang,
@@ -169,20 +167,24 @@ async def settings_lang(callback: CallbackQuery):
 
 @router.callback_query(F.data == "menu:premium")
 async def menu_premium(callback: CallbackQuery):
-    """Always show VIP join process (same as new users). invite_ready only after Trader ID."""
+    """Always show VIP join process with affiliate link + min deposit."""
     try:
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
         register_url = await get_affiliate_url()
         min_dep = await get_min_deposit()
-        await _safe_edit(
-            callback,
-            await get_message_text(
-                lang,
-                "premium_info",
-                min_deposit=int(min_dep) if min_dep else 0,
-            ),
+        text = await get_message_text(
+            lang,
+            "premium_info",
+            min_deposit=int(min_dep) if min_dep else 0,
+            register_url=register_url or "",
+        )
+        # New message so custom emoji render reliably
+        await callback.message.answer(
+            text,
             reply_markup=await premium_keyboard(lang, register_url),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
         )
     except Exception as e:
         print(f"menu_premium error: {e}")
@@ -250,7 +252,6 @@ async def menu_status(callback: CallbackQuery):
             joined=joined,
         )
 
-        # Postback history: ONLY for admins
         is_admin = callback.from_user.id in settings.admin_ids
         if is_admin:
             async with async_session() as session:
@@ -299,8 +300,6 @@ async def menu_support(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
 
-        # Prefer locale HTML version (with custom emoji)
-        # Only use DB override if it contains tg-emoji (so custom emoji still work)
         support = await get_message_text(lang, "support")
         msg_ov = await get_setting(f"msg_support_{lang}", "")
         if msg_ov and "<tg-emoji" in msg_ov:
@@ -310,7 +309,6 @@ async def menu_support(callback: CallbackQuery):
             if custom and "<tg-emoji" in custom:
                 support = custom
 
-        # Always send NEW message with HTML so custom emoji work reliably
         await callback.message.answer(
             support,
             reply_markup=await back_keyboard(lang),
@@ -328,7 +326,6 @@ async def menu_exness(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         text = await get_message_text(lang, "exness_info")
-        # Force new message + HTML so custom emoji works
         await callback.message.answer(
             text,
             reply_markup=await exness_keyboard(lang),
@@ -354,7 +351,6 @@ async def menu_create(callback: CallbackQuery):
             min_deposit=int(min_dep) if min_dep else 0,
         )
         kb = await premium_keyboard(lang, register_url)
-        # Always send NEW message with HTML so custom emoji + bold work reliably
         await callback.message.answer(
             text,
             reply_markup=kb,
@@ -379,7 +375,6 @@ async def menu_delete(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         text = await get_message_text(lang, "delete_account_guide")
-        # Always send NEW message with HTML so custom emoji + bold work reliably
         await callback.message.answer(
             text,
             reply_markup=await back_keyboard(lang),
