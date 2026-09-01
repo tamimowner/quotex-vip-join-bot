@@ -174,9 +174,14 @@ async def menu_premium(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = user.language if user else "bn"
         register_url = await get_affiliate_url()
+        min_dep = await get_min_deposit()
         await _safe_edit(
             callback,
-            await get_message_text(lang, "premium_info"),
+            await get_message_text(
+                lang,
+                "premium_info",
+                min_deposit=int(min_dep) if min_dep else 0,
+            ),
             reply_markup=await premium_keyboard(lang, register_url),
         )
     except Exception as e:
@@ -341,10 +346,12 @@ async def menu_create(callback: CallbackQuery):
         user = await get_user(callback.from_user.id)
         lang = (user.language if user else None) or "bn"
         register_url = await get_affiliate_url()
+        min_dep = await get_min_deposit()
         text = await get_message_text(
             lang,
             "create_account_guide",
             register_url=register_url or "",
+            min_deposit=int(min_dep) if min_dep else 0,
         )
         kb = await premium_keyboard(lang, register_url)
         # Always send NEW message with HTML so custom emoji + bold work reliably
