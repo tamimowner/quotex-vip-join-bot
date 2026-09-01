@@ -21,7 +21,8 @@ class Settings(BaseSettings):
 
     BOT_TOKEN: str
     ADMIN_IDS: str = ""
-    VIP_GROUP_ID: int = 0
+    # New VIP group ID (override with env VIP_GROUP_ID if needed)
+    VIP_GROUP_ID: int = -1003931217242
 
     VIP_GROUP_LINK: str = ""
 
