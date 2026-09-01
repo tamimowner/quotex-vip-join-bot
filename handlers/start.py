@@ -43,11 +43,13 @@ async def _send_welcome(
 ):
     bot_name = await get_bot_display_name(bot)
     register_url = await get_affiliate_url()
+    min_dep = await get_min_deposit()
     text = await get_message_text(
         lang,
         "welcome",
         botName=bot_name,
         register_url=register_url,
+        min_deposit=int(min_dep) if min_dep else 0,
     )
     file_id = await get_setting("welcome_photo_file_id", "")
     photo_url = await get_setting("welcome_photo_url", "")
@@ -157,10 +159,31 @@ async def receive_trader_id(message: Message, bot: Bot):
 
         lang = user.language or "bn"
 
-        # --- Same ID already verified → just say already verified ---
+        # --- Same ID already verified on THIS Telegram → already verified ---
         if user.is_verified and user.trader_id and user.trader_id == trader_id:
             await message.answer(
                 await get_message_text(lang, "already_verified"),
+                reply_markup=await main_menu(lang),
+            )
+            return
+
+        # --- Same Trader ID already used by ANOTHER Telegram account ---
+        other_q = await session.execute(
+            select(User).where(
+                User.trader_id == trader_id,
+                User.telegram_id != tg_id,
+                User.is_verified == True,
+            ).limit(1)
+        )
+        other_user = other_q.scalar_one_or_none()
+        if other_user:
+            await message.answer(
+                await get_message_text(
+                    lang,
+                    "trader_id_already_used",
+                    trader_id=trader_id,
+                ),
+                parse_mode="HTML",
                 reply_markup=await main_menu(lang),
             )
             return
