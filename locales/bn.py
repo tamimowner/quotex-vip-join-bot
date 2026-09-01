@@ -14,7 +14,8 @@ TEXTS = {
         '<tg-emoji emoji-id="6300954126901577963">👇</tg-emoji>\n\n'
 
         '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
-        "<b>VIP-তে অ্যাড হতে</b> ডিপোজিট প্রয়োজন (মিনিমাম অ্যামাউন্ট সেট থাকলে)।\n\n"
+        "<b>VIP-তে অ্যাড হতে</b> মিনিমাম ডিপোজিট প্রয়োজন: "
+        "<b>${min_deposit}</b>\n\n"
 
         '<tg-emoji emoji-id="5215174853895660531">📢</tg-emoji> '
         "<b>শুধু বেসিক গ্রুপে</b> জয়েন হতে চাইলে (VIP ছাড়া) — "
@@ -110,7 +111,7 @@ TEXTS = {
         "<b>প্রিমিয়াম / VIP জয়েন প্রক্রিয়া</b>\n\n"
         "1. নিচের বাটনে ক্লিক করে রেজিস্ট্রেশন লিংক খুলুন\n"
         "2. সেই লিংক দিয়ে <b>নতুন</b> কোটেক্স অ্যাকাউন্ট তৈরি করুন\n"
-        "3. মিনিমাম ডিপোজিট করুন (যদি লাগে)\n"
+        "3. মিনিমাম <b>${min_deposit}</b> ডিপোজিট করুন\n"
         "4. বটে <b>৮ সংখ্যার</b> Trader ID পাঠান\n"
         "5. ভেরিফাই হলে VIP গ্রুপ লিংক পাবেন\n\n"
         "শুধু বটের দেওয়া Affiliate Link ব্যবহার করুন।\n"
@@ -152,6 +153,15 @@ TEXTS = {
     "waiting_deposit": "আপনার ডিপোজিটের অপেক্ষায়...",
     "already_verified": "আপনি ইতিমধ্যে ভেরিফাইড!",
 
+    "trader_id_already_used": (
+        '<tg-emoji emoji-id="5230979538975996530">❌</tg-emoji> '
+        "<b>এই Trader ID ইতিমধ্যে ব্যবহার করা হয়েছে</b>\n\n"
+        "Trader ID: <code>{trader_id}</code>\n\n"
+        "একটি Trader ID শুধুমাত্র <b>একটি টেলিগ্রাম অ্যাকাউন্ট</b>-এ ব্যবহার করা যাবে।\n"
+        "এই ID অন্য অ্যাকাউন্টে ইতিমধ্যে ভেরিফাইড।\n\n"
+        "প্রশ্ন থাকলে: @SK_SupportOfficial"
+    ),
+
     "invite_ready": (
         '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji> '
         "<b>ভেরিফিকেশন সফল!</b> "
@@ -167,7 +177,12 @@ TEXTS = {
         "<b>ADVANCE কোর্স গ্রুপ</b>\n"
         '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
         '<a href="https://t.me/+bHS9UDzwZM4wMjRl">ক্লিক করুন ADVANCE গ্রুপে যোগ দিতে</a>\n'
-        "https://t.me/+bHS9UDzwZM4wMjRl\n"
+        "https://t.me/+bHS9UDzwZM4wMjRl\n\n"
+        '<tg-emoji emoji-id="5397782960512444700">📌</tg-emoji> '
+        "<b>Rules & Regulations</b> (মানতে হবে)\n"
+        '<tg-emoji emoji-id="5042101437237036298">🔗</tg-emoji> '
+        '<a href="https://t.me/+QENouQFoo-E4NGE1">ক্লিক করুন Rules দেখতে</a>\n'
+        "https://t.me/+QENouQFoo-E4NGE1\n"
         "━━━━━━━━━━━━━━━━\n\n"
         '<tg-emoji emoji-id="5879757713658875847">✨</tg-emoji> '
         "VIP ও ADVANCE সুবিধা উপভোগ করুন!\n"
